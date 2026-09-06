@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export function Nav() {
   return (
@@ -6,7 +6,7 @@ export function Nav() {
       <div className="mx-auto flex max-w-content items-center justify-between px-6 py-5">
         <Link
           href="/"
-          className="font-display text-lg tracking-[0.08em] text-text-primary"
+          className="font-display text-xl font-semibold tracking-[0.12em] text-text-primary"
         >
           FOUCH
         </Link>

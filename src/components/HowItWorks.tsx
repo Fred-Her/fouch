@@ -1,20 +1,21 @@
-import type { Dictionary } from "@/content/types";
+﻿import type { Dictionary } from "@/content/types";
 
 export function HowItWorks({ dictionary }: { dictionary: Dictionary }) {
   return (
-    <section className="mx-auto max-w-content px-6 pb-20">
-      <h2 className="font-display text-xl text-text-primary">
-        {dictionary.howItWorks.title}
-      </h2>
-      <ol className="mt-6 grid gap-6 sm:grid-cols-3">
+    <section className="mx-auto max-w-content px-6 py-16 sm:py-20">
+      <div className="grid gap-10 sm:grid-cols-3 sm:gap-6">
         {dictionary.howItWorks.steps.map((step, index) => (
-          <li key={step.title} className="border-t border-border pt-4">
-            <span className="text-sm text-text-muted">{index + 1}</span>
-            <p className="mt-1 font-display text-lg text-text-primary">{step.title}</p>
+          <div key={step.title}>
+            <p className="font-display text-4xl text-border-strong">
+              {String(index + 1).padStart(2, "0")}
+            </p>
+            <p className="mt-2 font-display text-2xl uppercase tracking-tight text-text-primary">
+              {step.title}
+            </p>
             <p className="mt-1 text-sm text-text-secondary">{step.body}</p>
-          </li>
+          </div>
         ))}
-      </ol>
+      </div>
     </section>
   );
 }
