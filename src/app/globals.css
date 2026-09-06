@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  FOUCH design tokens.
+
+  Editorial / premium direction: a warm near-black foundation (not pure
+  black — pure black reads as "dark mode default", not "edited"), a
+  restrained oxblood accent (an editorial-masthead red, not a metallic
+  gold — gold reads as pageant-crown cliché, which the brand explicitly
+  avoids), and a muted sage for success states. Everything else is
+  neutral so country flags and event artwork can carry color later.
+
+  Every component should read colors from these variables — never an
+  arbitrary hex value in a component file.
+*/
+:root {
+  --color-background: 20 19 24; /* #141318 */
+  --color-surface: 30 28 36; /* #1E1C24 */
+  --color-surface-raised: 37 35 45; /* #25232D */
+
+  --color-text-primary: 242 239 230; /* #F2EFE6 */
+  --color-text-secondary: 163 159 176; /* #A39FB0 */
+  --color-text-muted: 108 104 122; /* #6C687A */
+
+  --color-border: 44 41 51; /* #2C2933 */
+  --color-border-strong: 68 64 80; /* #444050 */
+
+  --color-accent: 166 52 46; /* #A6342E — editorial oxblood, not gold */
+  --color-accent-strong: 196 76 66; /* #C44C42 */
+  --color-on-accent: 242 239 230; /* text on accent fill */
+
+  --color-success: 122 158 134; /* #7A9E86 — muted sage, not neon */
+  --color-warning: 192 138 62; /* #C08A3E */
+
+  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  border-color: rgb(var(--color-border));
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-text-primary));
+  font-family: var(--font-body);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible keyboard focus, everywhere — never suppressed. */
+:focus-visible {
+  outline: 2px solid rgb(var(--color-accent-strong));
+  outline-offset: 2px;
+}
