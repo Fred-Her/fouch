@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getFeaturedEvent } from "@/lib/events";
+import { siteUrl } from "@/lib/site";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://fouch.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [
