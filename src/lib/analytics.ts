@@ -9,8 +9,8 @@
  * when analytics isn't configured (e.g. local dev).
  *
  * Properties must never carry personally identifiable information or
- * free-text contestant/user input — only structural values like an
- * event slug, a count, or a position.
+ * free-text nickname/contestant input — only structural values like
+ * an event slug, a count, a position, or a share method.
  */
 
 export type FouchAnalyticsEvent =
@@ -21,7 +21,16 @@ export type FouchAnalyticsEvent =
   | "participant_removed"
   | "prediction_reordered"
   | "prediction_completed"
-  | "prediction_reviewed";
+  | "prediction_reviewed"
+  | "prediction_submit_started"
+  | "prediction_submitted"
+  | "prediction_card_generated"
+  | "share_clicked"
+  | "native_share_opened"
+  | "copy_link_clicked"
+  | "image_downloaded"
+  | "public_prediction_viewed"
+  | "public_prediction_cta_clicked";
 
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;

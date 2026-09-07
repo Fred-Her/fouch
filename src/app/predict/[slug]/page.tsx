@@ -25,10 +25,13 @@ const REQUIRED_SELECTIONS = 10;
 
 export default async function PredictPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { slug } = await params;
+  const { from } = await searchParams;
   const event = getEventBySlug(slug);
   if (!event) notFound();
 
@@ -85,6 +88,7 @@ export default async function PredictPage({
           eventSlug={slug}
           participants={participants}
           requiredCount={requiredCount}
+          sourcePredictionId={from}
         />
       </div>
     </main>

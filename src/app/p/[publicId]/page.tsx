@@ -1,0 +1,86 @@
+﻿import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { flagEmoji } from "@/lib/flags";
+import { siteUrl } from "@/lib/site";
+import { getPredictionWithParticipants } from "@/lib/predictions-db";
+import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ publicId: string }>;
+}): Promise<Metadata> {
+  const { publicId } = await params;
+  const record = await getPredictionWithParticipants(publicId);
+  if (!record) return {};
+
+  const title = record.prediction.nickname
+    ? `${record.prediction.nickname}'s Top 10 — ${record.event.name}`
+    : `A Top 10 prediction — ${record.event.name}`;
+  const description = "See the prediction, then make your own call.";
+
+  return {
+    title,
+    description,
+    // Sprint 2 decision: public prediction pages are reachable via
+    // link but intentionally not indexed — we don't want thousands of
+    // thin user-generated pages in search results. `follow` so the
+    // "Make your Top 10" CTA is still crawlable back to the real
+    // product pages.
+    robots: { index: false, follow: true },
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}/p/${publicId}`,
+      images: [`${siteUrl}/p/${publicId}/opengraph-image`],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
+
+export default async function PublicPredictionPage({
+  params,
+}: {
+  params: Promise<{ publicId: string }>;
+}) {
+  const { publicId } = await params;
+  const record = await getPredictionWithParticipants(publicId);
+  if (!record) notFound();
+
+  const { prediction, event, rankedParticipants } = record;
+  const heading = prediction.nickname ? `${prediction.nickname}'s Top 10` : "Someone's Top 10";
+
+  return (
+    <main className="mx-auto max-w-content px-6 py-8">
+      <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
+        FOUCH
+      </Link>
+
+      <h1 className="mt-6 font-display text-2xl text-text-primary sm:text-3xl">{event.name}</h1>
+      <p className="mt-2 font-display text-xl uppercase tracking-tight text-text-primary">
+        {heading}
+      </p>
+
+      {prediction.countryCode ? (
+        <p className="mt-1 text-sm text-text-muted">{flagEmoji(prediction.countryCode)}</p>
+      ) : null}
+
+      {prediction.dataStatus === "demo" ? (
+        <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
+          Demo prediction — not the official lineup
+        </p>
+      ) : null}
+
+      <PublicPredictionView
+        eventSlug={event.slug}
+        publicId={publicId}
+        rankedParticipants={rankedParticipants}
+      />
+    </main>
+  );
+}

@@ -13,10 +13,13 @@ export function PredictionBuilder({
   eventSlug,
   participants,
   requiredCount,
+  sourcePredictionId,
 }: {
   eventSlug: string;
   participants: Participant[];
   requiredCount: number;
+  /** Public ID of the shared prediction this visitor arrived from, if any. */
+  sourcePredictionId?: string;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -32,7 +35,10 @@ export function PredictionBuilder({
     const restored = loadPrediction(eventSlug, validIds);
     setSelectedIds(restored.slice(0, requiredCount));
     setHydrated(true);
-    track("start_prediction", { event_slug: eventSlug });
+    track("start_prediction", {
+      event_slug: eventSlug,
+      source_prediction_public_id: sourcePredictionId ?? null,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

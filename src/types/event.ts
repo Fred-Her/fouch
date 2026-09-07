@@ -1,4 +1,4 @@
-export type EventCategory =
+﻿export type EventCategory =
   | "pageant"
   | "awards"
   | "music"
@@ -26,4 +26,8 @@ export interface FouchEvent {
   isFeatured: boolean;
   /** Plain-language subtitle used in the UI, e.g. venue or one-line context. */
   subtitle?: string;
+  /** ISO 8601 datetime. Predictions are rejected before this time, if set. */
+  predictionOpenAt?: string;
+  /** ISO 8601 datetime. Predictions are rejected at/after this time, if set. */
+  predictionLockAt?: string;
 }

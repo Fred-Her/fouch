@@ -1,4 +1,4 @@
-import type { FouchEvent } from "@/types/event";
+﻿import type { FouchEvent } from "@/types/event";
 
 /**
  * SEED DATA — Sprint 0.
@@ -21,6 +21,10 @@ const events: FouchEvent[] = [
     eventDate: "2026-11-24",
     isFeatured: true,
     subtitle: "José Miguel Agrelot Coliseum, San Juan, Puerto Rico",
+    // Conservative lock: start of the event's calendar day (UTC), not the
+    // exact broadcast time (not publicly confirmed to the minute at time
+    // of writing). Safely before any results could be known.
+    predictionLockAt: "2026-11-24T00:00:00Z",
   },
 ];
 
