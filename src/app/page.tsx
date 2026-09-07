@@ -1,4 +1,4 @@
-import { en } from "@/content/en";
+﻿import { en } from "@/content/en";
 import { getFeaturedEvent } from "@/lib/events";
 import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
@@ -15,7 +15,7 @@ export default function Home() {
       <ViewTracker event="landing_view" />
       <Nav />
       <main>
-        <Hero dictionary={en} />
+        <Hero dictionary={en} eventSlug={featuredEvent?.slug ?? null} />
         {featuredEvent ? (
           <FeaturedEvent event={featuredEvent} dictionary={en} />
         ) : null}

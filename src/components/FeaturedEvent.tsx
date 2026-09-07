@@ -76,7 +76,7 @@ export function FeaturedEvent({
         </div>
 
         <TrackedLink
-          href={`/events/${event.slug}`}
+          href={`/predict/${event.slug}`}
           event="featured_event_clicked"
           eventProperties={{ slug: event.slug }}
           className="group mt-8 inline-flex items-center gap-2 rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
