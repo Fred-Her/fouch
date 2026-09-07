@@ -2,7 +2,7 @@
 
 interface StoredPrediction {
   eventSlug: string;
-  /** Participant IDs, in ranked order â€” index 0 is position #1. */
+  /** Participant IDs, in ranked order — index 0 is position #1. */
   participantIds: string[];
 }
 
@@ -14,7 +14,7 @@ function storageKey(eventSlug: string): string {
  * Reads and validates a stored in-progress prediction for an event.
  * Never throws: a missing key, malformed JSON, or a shape that
  * doesn't match `StoredPrediction` all just return null so the caller
- * can fail safely and start fresh â€” this is browser-only scratch
+ * can fail safely and start fresh — this is browser-only scratch
  * state, not a database record.
  *
  * `validParticipantIds` lets the caller drop any stored ID that no
@@ -62,7 +62,7 @@ export function savePrediction(eventSlug: string, participantIds: string[]): voi
     window.localStorage.setItem(storageKey(eventSlug), JSON.stringify(payload));
   } catch {
     // Storage can fail (private browsing, quota, disabled). The
-    // prediction still works for the current session either way â€”
+    // prediction still works for the current session either way —
     // this is a convenience, not a requirement.
   }
 }

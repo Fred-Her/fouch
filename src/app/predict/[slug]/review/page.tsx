@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { getEventBySlug } from "@/lib/events";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { ReviewContent } from "@/components/prediction/ReviewContent";
@@ -14,7 +15,7 @@ export async function generateMetadata({
   const event = getEventBySlug(slug);
   if (!event) return {};
 
-  return { title: `Your Top 10 â€” ${event.name}` };
+  return { title: `Your Top 10 — ${event.name}` };
 }
 
 const REQUIRED_SELECTIONS = 10;
@@ -37,9 +38,10 @@ export default async function ReviewPage({
     <main className="mx-auto max-w-content px-6 py-8">
       <Link
         href={`/predict/${slug}`}
-        className="text-sm text-text-secondary hover:text-text-primary"
+        className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary"
       >
-        â† Back to builder
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        Back to builder
       </Link>
 
       <p className="mt-6 font-display text-sm tracking-[0.2em] text-text-muted">FOUCH</p>

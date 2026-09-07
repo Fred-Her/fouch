@@ -1,7 +1,7 @@
 ﻿/**
  * Minimal analytics seam.
  *
- * Intentionally NOT wired to PostHog (or any provider) yet â€” adding an
+ * Intentionally NOT wired to PostHog (or any provider) yet — adding an
  * SDK before we know we need it is dead weight. This gives every call
  * site a single, typed function to import, so plugging in a real
  * provider later is a one-file change instead of a hunt through
@@ -9,7 +9,7 @@
  * when analytics isn't configured (e.g. local dev).
  *
  * Properties must never carry personally identifiable information or
- * free-text contestant/user input â€” only structural values like an
+ * free-text contestant/user input — only structural values like an
  * event slug, a count, or a position.
  */
 

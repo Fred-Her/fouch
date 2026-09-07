@@ -84,7 +84,7 @@ export function ReviewContent({
       </Link>
 
       <p className="mt-6 max-w-md text-xs text-text-muted">
-        This prediction is saved on this device only â€” it hasn&apos;t been submitted yet.
+        This prediction is saved on this device only — it hasn&apos;t been submitted yet.
         Submitting and scoring are coming in a future update.
       </p>
     </div>

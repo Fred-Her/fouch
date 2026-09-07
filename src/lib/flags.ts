@@ -2,7 +2,7 @@
 
 /**
  * Converts an ISO 3166-1 alpha-2 code (e.g. "TH") to its Unicode flag
- * emoji. No image assets, no flag library â€” just two regional
+ * emoji. No image assets, no flag library — just two regional
  * indicator symbols. Reliable on modern iOS/Android/desktop browsers,
  * which is Fouch's whole audience.
  */

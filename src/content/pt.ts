@@ -1,4 +1,4 @@
-import type { Dictionary } from "./types";
+﻿import type { Dictionary } from "./types";
 
 // Prepared for future localization. Not yet wired into routing in Sprint 0 —
 // English is the only live locale.

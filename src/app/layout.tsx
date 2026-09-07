@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
   title: {
     default: en.meta.title,
-    template: "%s Â· Fouch",
+    template: "%s · Fouch",
   },
   description: en.meta.description,
   openGraph: {

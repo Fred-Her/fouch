@@ -5,7 +5,7 @@ import { getEventBySlug } from "@/lib/events";
  * `/events/[slug]` predates the Prediction Builder (Sprint 0's
  * "coming soon" placeholder). Now that `/predict/[slug]` is real, this
  * route would just be a stale duplicate of the homepage's featured
- * event card â€” so it redirects straight to the builder instead of
+ * event card — so it redirects straight to the builder instead of
  * carrying copy that's no longer true.
  */
 export default async function EventPage({

@@ -22,7 +22,7 @@ export function FeaturedEvent({
     .toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
     .toUpperCase();
 
-  // Decorative only â€” a preview of the ranking mechanic, not real input.
+  // Decorative only — a preview of the ranking mechanic, not real input.
   const previewSlots = [1, 2, 3];
 
   return (
@@ -58,12 +58,12 @@ export function FeaturedEvent({
         </h2>
 
         <p className="mt-4 text-sm uppercase tracking-[0.15em] text-text-muted">
-          {dayMonth} Â· {event.subtitle}
+          {dayMonth} · {event.subtitle}
         </p>
 
         <p className="mt-8 text-lg text-text-secondary">{dictionary.featuredEvent.prompt}</p>
 
-        {/* Decorative preview of the ranking mechanic â€” not interactive. */}
+        {/* Decorative preview of the ranking mechanic — not interactive. */}
         <div aria-hidden className="mt-6 max-w-xs space-y-2">
           {previewSlots.map((slot) => (
             <div key={slot} className="flex items-center gap-3">

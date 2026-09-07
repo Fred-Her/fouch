@@ -103,7 +103,7 @@ export function PredictionBuilder({
 
   return (
     <div>
-      {/* Compact sticky progress â€” one line, not a large banner. */}
+      {/* Compact sticky progress — one line, not a large banner. */}
       <div className="sticky top-0 z-10 w-full border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-content items-center justify-between px-6 py-3">
           <span className="text-xs font-medium uppercase tracking-[0.15em] text-text-secondary">

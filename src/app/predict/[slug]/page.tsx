@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { getEventBySlug } from "@/lib/events";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { PredictionBuilder } from "@/components/prediction/PredictionBuilder";
@@ -15,7 +16,7 @@ export async function generateMetadata({
   if (!event) return {};
 
   return {
-    title: `Build your Top 10 â€” ${event.name}`,
+    title: `Build your Top 10 — ${event.name}`,
     description: "Choose the 10 contestants you think will go furthest.",
   };
 }
@@ -35,8 +36,12 @@ export default async function PredictPage({
   if (!participantData || participantData.participants.length === 0) {
     return (
       <main className="mx-auto max-w-content px-6 py-16">
-        <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
-          â† Back to Fouch
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Back to Fouch
         </Link>
         <p className="mt-8 text-text-secondary">
           No participants are available for this event yet. Check back soon.
@@ -51,8 +56,12 @@ export default async function PredictPage({
   return (
     <main>
       <div className="mx-auto max-w-content px-6 pt-8">
-        <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
-          â† Back to Fouch
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Back to Fouch
         </Link>
 
         <p className="mt-6 font-display text-sm tracking-[0.2em] text-text-muted">FOUCH</p>
@@ -66,7 +75,7 @@ export default async function PredictPage({
 
         {status === "demo" ? (
           <p className="mt-4 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-            Demo participant data â€” not the official lineup
+            Demo participant data — not the official lineup
           </p>
         ) : null}
       </div>

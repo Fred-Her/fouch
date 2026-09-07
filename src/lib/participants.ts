@@ -1,14 +1,14 @@
 ﻿import type { Participant } from "@/types/participant";
 
 /**
- * DEMO / DEVELOPMENT DATA â€” NOT the official Miss Universe 2026 lineup.
+ * DEMO / DEVELOPMENT DATA — NOT the official Miss Universe 2026 lineup.
  *
  * The full, verified list of national delegates for Miss Universe 2026
  * is not yet finalized/confirmed by the organization at the time of
  * writing. Rather than invent an official-looking roster, this is a
  * clearly-marked demo set of real countries, used only to test the
  * Top 10 mechanic. See `getParticipantsForEvent`'s returned `status`
- * field â€” the UI must surface "Demo participant data" whenever it is
+ * field — the UI must surface "Demo participant data" whenever it is
  * "demo", and this must never be presented as the official lineup.
  */
 const demoCountries: Array<{ code: string; name: string }> = [
