@@ -244,3 +244,71 @@ export async function getEligiblePredictionsForComparison(
 
   return eligible;
 }
+
+export interface LeaderboardRawEntry {
+  predictionId: string;
+  publicId: string;
+  nickname: string | null;
+  countryCode: string | null;
+  rankedParticipantIds: string[];
+}
+
+/**
+ * Same eligibility filters as getEligiblePredictionsForComparison
+ * (event + data_status + is_final=true + exactly 10 items) — kept as a
+ * near-identical second query, deliberately, rather than reusing that
+ * function directly: that function's contract explicitly promises to
+ * never select nickname/country (see its comment) so it stays safe to
+ * reuse anywhere privacy matters. The leaderboard's whole purpose is
+ * to show nickname/country publicly, so it needs its own query rather
+ * than weakening that guarantee.
+ */
+export async function getLeaderboardRawEntries(
+  eventSlug: string,
+  dataStatus: ParticipantDataStatus,
+): Promise<LeaderboardRawEntry[]> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data: predictions, error } = await supabase
+    .from("predictions")
+    .select("id, public_id, nickname, country_code")
+    .eq("event_slug", eventSlug)
+    .eq("data_status", dataStatus)
+    .eq("is_final", true);
+
+  if (error || !predictions || predictions.length === 0) return [];
+
+  const predictionIds = predictions.map((p) => p.id);
+
+  const { data: items, error: itemsError } = await supabase
+    .from("prediction_items")
+    .select("prediction_id, participant_id, predicted_position")
+    .in("prediction_id", predictionIds)
+    .order("predicted_position", { ascending: true });
+
+  if (itemsError || !items) return [];
+
+  const itemsByPrediction = new Map<string, string[]>();
+  for (const item of items) {
+    const list = itemsByPrediction.get(item.prediction_id) ?? [];
+    list.push(item.participant_id);
+    itemsByPrediction.set(item.prediction_id, list);
+  }
+
+  const entries: LeaderboardRawEntry[] = [];
+  for (const prediction of predictions) {
+    const rankedParticipantIds = itemsByPrediction.get(prediction.id) ?? [];
+    if (rankedParticipantIds.length === 10) {
+      entries.push({
+        predictionId: prediction.id,
+        publicId: prediction.public_id,
+        nickname: prediction.nickname,
+        countryCode: prediction.country_code,
+        rankedParticipantIds,
+      });
+    }
+  }
+
+  return entries;
+}

@@ -43,7 +43,11 @@ export type FouchAnalyticsEvent =
   | "result_card_generated"
   | "result_card_shared"
   | "result_card_saved"
-  | "result_share_link_copied";
+  | "result_share_link_copied"
+  | "leaderboard_viewed"
+  | "leaderboard_row_clicked"
+  | "own_rank_viewed"
+  | "leaderboard_from_score_clicked";
 
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;

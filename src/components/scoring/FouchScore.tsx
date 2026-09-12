@@ -10,6 +10,7 @@ import type { FouchEvent } from "@/types/event";
 import type { ScoreBand } from "@/types/scoring";
 import { FouchScoreTracker } from "./FouchScoreTracker";
 import { ShareActions } from "@/components/prediction/ShareActions";
+import { TrackedLink } from "@/components/TrackedLink";
 
 const BAND_LABEL: Record<ScoreBand, string> = {
   MISSED_IT: "Missed it",
@@ -174,6 +175,17 @@ export async function FouchScore({
           <p className="mt-1 text-xs text-text-muted">How close your picks were to the official finish.</p>
         </div>
       </dl>
+
+      <div className="mt-8">
+        <TrackedLink
+          href={`/events/${event.slug}/leaderboard?from=${publicId}`}
+          event="leaderboard_from_score_clicked"
+          eventProperties={{ event_slug: event.slug }}
+          className="inline-flex items-center justify-center rounded border border-border-strong px-6 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
+        >
+          See where you finished
+        </TrackedLink>
+      </div>
 
       <div className="mt-8">
         <p className="font-display text-lg text-text-primary">Share your result</p>
