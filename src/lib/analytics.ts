@@ -36,7 +36,14 @@ export type FouchAnalyticsEvent =
   | "top3_match_viewed"
   | "boldest_pick_viewed"
   | "community_top10_viewed"
-  | "community_share_clicked";
+  | "community_share_clicked"
+  | "score_viewed"
+  | "score_breakdown_viewed"
+  | "percentile_viewed"
+  | "result_card_generated"
+  | "result_card_shared"
+  | "result_card_saved"
+  | "result_share_link_copied";
 
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;

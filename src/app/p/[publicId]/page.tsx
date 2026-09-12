@@ -6,6 +6,7 @@ import { siteUrl } from "@/lib/site";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
 import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
+import { FouchScore } from "@/components/scoring/FouchScore";
 
 export async function generateMetadata({
   params,
@@ -81,6 +82,7 @@ export default async function PublicPredictionPage({
         eventSlug={event.slug}
         publicId={publicId}
         rankedParticipants={rankedParticipants}
+        fouchScore={<FouchScore prediction={prediction} event={event} publicId={publicId} />}
         youVsTheWorld={<YouVsTheWorld prediction={prediction} event={event} />}
       />
     </main>

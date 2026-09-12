@@ -13,11 +13,16 @@ export function PublicPredictionView({
   eventSlug,
   publicId,
   rankedParticipants,
+  fouchScore,
   youVsTheWorld,
 }: {
   eventSlug: string;
   publicId: string;
   rankedParticipants: Participant[];
+  /** FOUCH Score section (Sprint 4) — null/absent renders nothing, which
+   * is exactly the pre-result experience. Server Component, passed down
+   * for the same reason as youVsTheWorld below. */
+  fouchScore?: ReactNode;
   /** The You vs The World section — a Server Component rendered by the
    * page and passed down, since it needs server-side data fetching
    * that a Client Component can't do directly. */
@@ -60,6 +65,8 @@ export function PublicPredictionView({
           </li>
         ))}
       </ol>
+
+      {fouchScore}
 
       {youVsTheWorld}
 

@@ -3,21 +3,50 @@
 import { useEffect, useState } from "react";
 import { Share2, Download, Link2, Check } from "lucide-react";
 import { track } from "@/lib/analytics";
+import type { FouchAnalyticsEvent } from "@/lib/analytics";
+
+interface ShareEventNames {
+  share: FouchAnalyticsEvent;
+  nativeOpened: FouchAnalyticsEvent | null;
+  download: FouchAnalyticsEvent;
+  copyLink: FouchAnalyticsEvent;
+}
+
+const EVENT_NAMES: Record<"prediction" | "result", ShareEventNames> = {
+  prediction: {
+    share: "share_clicked",
+    nativeOpened: "native_share_opened",
+    download: "image_downloaded",
+    copyLink: "copy_link_clicked",
+  },
+  result: {
+    share: "result_card_shared",
+    nativeOpened: null,
+    download: "result_card_saved",
+    copyLink: "result_share_link_copied",
+  },
+};
 
 export function ShareActions({
   eventSlug,
   publicUrl,
   storyCardUrl,
   postCardUrl,
+  variant = "prediction",
 }: {
   eventSlug: string;
   publicUrl: string;
   storyCardUrl: string;
   postCardUrl: string;
+  /** Defaults to "prediction" — the existing, unchanged behavior. Pass
+   * "result" to reuse this exact component for the post-result Result
+   * Card, firing the distinct result_* analytics events instead. */
+  variant?: "prediction" | "result";
 }) {
   const [format, setFormat] = useState<"story" | "post">("story");
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
+  const events = EVENT_NAMES[variant];
 
   // navigator.share only exists client-side — checked once after mount
   // so server and initial client render stay consistent (no
@@ -31,19 +60,19 @@ export function ShareActions({
   const activeCardUrl = format === "story" ? storyCardUrl : postCardUrl;
 
   async function handleShare() {
-    track("share_clicked", { event_slug: eventSlug, share_method: "native" });
+    track(events.share, { event_slug: eventSlug, share_method: "native" });
     if (!canNativeShare) return;
 
     try {
       await navigator.share({ title: "My Fouch prediction", url: publicUrl });
-      track("native_share_opened", { event_slug: eventSlug });
+      if (events.nativeOpened) track(events.nativeOpened, { event_slug: eventSlug });
     } catch {
       // User cancelled the share sheet — not an error worth surfacing.
     }
   }
 
   async function handleCopyLink() {
-    track("copy_link_clicked", { event_slug: eventSlug });
+    track(events.copyLink, { event_slug: eventSlug });
     try {
       await navigator.clipboard.writeText(publicUrl);
       setCopied(true);
@@ -55,7 +84,7 @@ export function ShareActions({
   }
 
   function handleDownload() {
-    track("image_downloaded", { event_slug: eventSlug, share_method: format });
+    track(events.download, { event_slug: eventSlug, share_method: format });
   }
 
   return (
@@ -84,7 +113,7 @@ export function ShareActions({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={activeCardUrl}
-        alt="Your Fouch prediction card"
+        alt={variant === "result" ? "Your Fouch result card" : "Your Fouch prediction card"}
         className="mt-3 w-full max-w-xs rounded border border-border"
       />
 
@@ -102,7 +131,7 @@ export function ShareActions({
 
         <a
           href={activeCardUrl}
-          download={`fouch-prediction-${format}.png`}
+          download={`fouch-${variant}-${format}.png`}
           onClick={handleDownload}
           className="inline-flex items-center gap-2 rounded border border-border-strong px-5 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
         >
