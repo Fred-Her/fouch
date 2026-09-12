@@ -30,7 +30,13 @@ export type FouchAnalyticsEvent =
   | "copy_link_clicked"
   | "image_downloaded"
   | "public_prediction_viewed"
-  | "public_prediction_cta_clicked";
+  | "public_prediction_cta_clicked"
+  | "you_vs_world_viewed"
+  | "same_winner_viewed"
+  | "top3_match_viewed"
+  | "boldest_pick_viewed"
+  | "community_top10_viewed"
+  | "community_share_clicked";
 
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;

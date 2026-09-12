@@ -5,6 +5,7 @@ import { flagEmoji } from "@/lib/flags";
 import { siteUrl } from "@/lib/site";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
+import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
 
 export async function generateMetadata({
   params,
@@ -80,6 +81,7 @@ export default async function PublicPredictionPage({
         eventSlug={event.slug}
         publicId={publicId}
         rankedParticipants={rankedParticipants}
+        youVsTheWorld={<YouVsTheWorld prediction={prediction} event={event} />}
       />
     </main>
   );

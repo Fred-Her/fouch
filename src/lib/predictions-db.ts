@@ -5,8 +5,12 @@ import { getEventBySlug } from "@/lib/events";
 import { getParticipantsForEvent, type ParticipantDataStatus } from "@/lib/participants";
 import type { FouchEvent } from "@/types/event";
 import type { Participant } from "@/types/participant";
+import type { EligiblePrediction } from "@/lib/community-comparison";
 
 export interface PredictionRecord {
+  /** Internal DB id — server-side use only (e.g. self-exclusion from
+   * community comparisons). Never send this to the client. */
+  id: string;
   publicId: string;
   eventSlug: string;
   nickname: string | null;
@@ -118,6 +122,7 @@ export async function getPredictionByPublicId(publicId: string): Promise<Predict
   if (itemsError || !items) return null;
 
   return {
+    id: prediction.id,
     publicId: prediction.public_id,
     eventSlug: prediction.event_slug,
     nickname: prediction.nickname,
@@ -179,4 +184,63 @@ export async function getPredictionWithParticipants(publicId: string): Promise<{
   if (rankedParticipants.length !== prediction.rankedParticipantIds.length) return null;
 
   return { prediction, event, rankedParticipants };
+}
+
+/**
+ * Fetches every ranked-ID list eligible for comparison against a given
+ * event + data-status — the raw material for community-comparison.ts.
+ * Only `id` and `participant_id`/`predicted_position` are selected;
+ * nickname, country, and device_token never leave the database for
+ * this purpose (see Sprint 3 brief section 22, privacy).
+ *
+ * "Eligible" here means: same event, same data_status (demo
+ * predictions and future verified predictions never mix — see
+ * section 9), and exactly 10 items. A prediction with a corrupted or
+ * incomplete item set is silently excluded rather than crashing the
+ * comparison.
+ */
+export async function getEligiblePredictionsForComparison(
+  eventSlug: string,
+  dataStatus: ParticipantDataStatus,
+): Promise<EligiblePrediction[]> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data: predictions, error } = await supabase
+    .from("predictions")
+    .select("id")
+    .eq("event_slug", eventSlug)
+    .eq("data_status", dataStatus)
+    .eq("is_final", true);
+
+  if (error || !predictions || predictions.length === 0) return [];
+
+  const predictionIds = predictions.map((p) => p.id);
+
+  const { data: items, error: itemsError } = await supabase
+    .from("prediction_items")
+    .select("prediction_id, participant_id, predicted_position")
+    .in("prediction_id", predictionIds)
+    .order("predicted_position", { ascending: true });
+
+  if (itemsError || !items) return [];
+
+  const itemsByPrediction = new Map<string, string[]>();
+  for (const item of items) {
+    const list = itemsByPrediction.get(item.prediction_id) ?? [];
+    list.push(item.participant_id);
+    itemsByPrediction.set(item.prediction_id, list);
+  }
+
+  const eligible: EligiblePrediction[] = [];
+  for (const [predictionId, rankedParticipantIds] of itemsByPrediction) {
+    // Defensive: a prediction with anything other than exactly 10
+    // items is malformed and excluded rather than skewing the
+    // comparison (see section 33, edge cases).
+    if (rankedParticipantIds.length === 10) {
+      eligible.push({ predictionId, rankedParticipantIds });
+    }
+  }
+
+  return eligible;
 }

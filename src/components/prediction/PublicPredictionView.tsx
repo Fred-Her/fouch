@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { flagEmoji } from "@/lib/flags";
@@ -13,10 +13,15 @@ export function PublicPredictionView({
   eventSlug,
   publicId,
   rankedParticipants,
+  youVsTheWorld,
 }: {
   eventSlug: string;
   publicId: string;
   rankedParticipants: Participant[];
+  /** The You vs The World section — a Server Component rendered by the
+   * page and passed down, since it needs server-side data fetching
+   * that a Client Component can't do directly. */
+  youVsTheWorld: ReactNode;
 }) {
   const searchParams = useSearchParams();
   const isNew = searchParams.get("new") === "1";
@@ -58,7 +63,17 @@ export function PublicPredictionView({
         ))}
       </ol>
 
-      <div className="mt-8">
+      {youVsTheWorld}
+
+      <Link
+        href={`/predict/${eventSlug}?from=${publicId}`}
+        onClick={() => track("public_prediction_cta_clicked", { event_slug: eventSlug })}
+        className="mt-10 inline-flex items-center justify-center rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
+      >
+        Make your Top 10
+      </Link>
+
+      <div id="share" className="mt-10 scroll-mt-20 border-t border-border pt-8">
         <p className="font-display text-lg text-text-primary">Share your prediction</p>
         <div className="mt-3">
           <ShareActions
@@ -69,14 +84,6 @@ export function PublicPredictionView({
           />
         </div>
       </div>
-
-      <Link
-        href={`/predict/${eventSlug}?from=${publicId}`}
-        onClick={() => track("public_prediction_cta_clicked", { event_slug: eventSlug })}
-        className="mt-10 inline-flex items-center justify-center rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
-      >
-        Make your Top 10
-      </Link>
     </div>
   );
 }

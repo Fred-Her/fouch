@@ -30,4 +30,13 @@ export interface FouchEvent {
   predictionOpenAt?: string;
   /** ISO 8601 datetime. Predictions are rejected at/after this time, if set. */
   predictionLockAt?: string;
+  /**
+   * What a single ranked option is called for this event — "contestant"
+   * for a verified pageant roster, "nominee" for an Oscars category,
+   * "country" for a Eurovision entry, etc. Defaults to "pick" when
+   * unset (see getEntryNoun), which is deliberately generic for the
+   * current demo country dataset — see Sprint 3 brief section 30.
+   */
+  entryNounSingular?: string;
+  entryNounPlural?: string;
 }

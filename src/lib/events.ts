@@ -35,3 +35,14 @@ export function getFeaturedEvent(): FouchEvent | null {
 export function getEventBySlug(slug: string): FouchEvent | null {
   return events.find((event) => event.slug === slug) ?? null;
 }
+
+/**
+ * The generic, event-agnostic term for one ranked option — "pick" by
+ * default (fits the current demo country dataset), overridable per
+ * event via entryNounSingular/Plural for future categories (Oscars
+ * "nominee", Eurovision "entry", a verified pageant "contestant").
+ */
+export function getEntryNoun(event: FouchEvent, plural: boolean): string {
+  if (plural) return event.entryNounPlural ?? "picks";
+  return event.entryNounSingular ?? "pick";
+}
