@@ -312,3 +312,69 @@ export async function getLeaderboardRawEntries(
 
   return entries;
 }
+
+/**
+ * Experiment 01 ("Your Crowd Changed") — the leanest possible query for
+ * this experiment: only each eligible prediction's submission time and
+ * #1 (winner) pick, never the full 10-item ranking. Deliberately a
+ * separate query rather than reusing getEligiblePredictionsForComparison
+ * or getLeaderboardRawEntries — those fetch every item of every
+ * prediction, which this experiment doesn't need at all.
+ *
+ * Eligibility mirrors both of those functions exactly: same event_slug,
+ * same data_status, is_final = true, and (checked via the items query)
+ * exactly 10 items — never a different population definition for the
+ * same underlying concept of "an eligible prediction."
+ */
+export async function getWinnerPicksForConsensusChange(
+  eventSlug: string,
+  dataStatus: ParticipantDataStatus,
+): Promise<Array<{ predictionId: string; submittedAt: string; winnerParticipantId: string }>> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data: predictions, error } = await supabase
+    .from("predictions")
+    .select("id, submitted_at")
+    .eq("event_slug", eventSlug)
+    .eq("data_status", dataStatus)
+    .eq("is_final", true);
+
+  if (error || !predictions || predictions.length === 0) return [];
+
+  const predictionIds = predictions.map((p) => p.id);
+
+  // Only position 1 (the winner pick) — and only from predictions with
+  // exactly 10 items, so a malformed/partial prediction never counts as
+  // an eligible "winner pick" here either.
+  const { data: allItems, error: itemsError } = await supabase
+    .from("prediction_items")
+    .select("prediction_id, participant_id, predicted_position")
+    .in("prediction_id", predictionIds);
+
+  if (itemsError || !allItems) return [];
+
+  const itemCountByPrediction = new Map<string, number>();
+  const winnerByPrediction = new Map<string, string>();
+  for (const item of allItems) {
+    itemCountByPrediction.set(item.prediction_id, (itemCountByPrediction.get(item.prediction_id) ?? 0) + 1);
+    if (item.predicted_position === 1) {
+      winnerByPrediction.set(item.prediction_id, item.participant_id);
+    }
+  }
+
+  const results: Array<{ predictionId: string; submittedAt: string; winnerParticipantId: string }> = [];
+  for (const prediction of predictions) {
+    const winner = winnerByPrediction.get(prediction.id);
+    const itemCount = itemCountByPrediction.get(prediction.id) ?? 0;
+    if (winner && itemCount === 10 && prediction.submitted_at) {
+      results.push({
+        predictionId: prediction.id,
+        submittedAt: prediction.submitted_at,
+        winnerParticipantId: winner,
+      });
+    }
+  }
+
+  return results;
+}

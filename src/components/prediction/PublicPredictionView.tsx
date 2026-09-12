@@ -16,6 +16,7 @@ export function PublicPredictionView({
   hasResult = false,
   fouchScore,
   youVsTheWorld,
+  yourCrowdChanged,
 }: {
   eventSlug: string;
   publicId: string;
@@ -34,6 +35,9 @@ export function PublicPredictionView({
    * page and passed down, since it needs server-side data fetching
    * that a Client Component can't do directly. */
   youVsTheWorld: ReactNode;
+  /** Experiment 01 ("Your Crowd Changed") — null/absent renders
+   * nothing, same pattern as the two slots above. */
+  yourCrowdChanged?: ReactNode;
 }) {
   const searchParams = useSearchParams();
   const isNew = searchParams.get("new") === "1";
@@ -98,6 +102,8 @@ export function PublicPredictionView({
       {fouchScore}
 
       {youVsTheWorld}
+
+      {yourCrowdChanged}
 
       {/* Pre-result: original prediction sharing stays primary and sits
           right before the "Make your Top 10" CTA, unchanged from Sprint 2/3.

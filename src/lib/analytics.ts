@@ -47,7 +47,8 @@ export type FouchAnalyticsEvent =
   | "leaderboard_viewed"
   | "leaderboard_row_clicked"
   | "own_rank_viewed"
-  | "leaderboard_from_score_clicked";
+  | "leaderboard_from_score_clicked"
+  | "consensus_change_viewed";
 
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
