@@ -3,7 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { flagEmoji } from "@/lib/flags";
+import { CountryFlag } from "@/components/CountryFlag";
 import { track } from "@/lib/analytics";
 import { siteUrl } from "@/lib/site";
 import type { Participant } from "@/types/participant";
@@ -55,9 +55,7 @@ export function PublicPredictionView({
             <span className="font-display w-7 shrink-0 text-base text-accent-strong">
               {String(index + 1).padStart(2, "0")}
             </span>
-            <span aria-hidden className="text-xl">
-              {flagEmoji(participant.countryCode)}
-            </span>
+            <CountryFlag countryCode={participant.countryCode} className="text-xl" />
             <span className="text-sm text-text-primary">{participant.displayName}</span>
           </li>
         ))}

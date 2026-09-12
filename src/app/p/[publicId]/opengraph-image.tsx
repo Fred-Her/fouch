@@ -1,5 +1,4 @@
 ﻿import { ImageResponse } from "next/og";
-import { flagEmoji } from "@/lib/flags";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
 
 export const runtime = "edge";
@@ -69,7 +68,17 @@ export default async function OpengraphImage({
           {top3.map((participant, index) => (
             <div key={participant.id} style={{ display: "flex", alignItems: "center", fontSize: 28 }}>
               <span style={{ display: "flex", color: accent, marginRight: 10 }}>{index + 1}</span>
-              <span style={{ display: "flex", marginRight: 8 }}>{flagEmoji(participant.countryCode)}</span>
+              <span
+                style={{
+                  display: "flex",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: textMuted,
+                  marginRight: 10,
+                }}
+              >
+                {participant.countryCode}
+              </span>
               <span style={{ display: "flex" }}>{participant.displayName}</span>
             </div>
           ))}

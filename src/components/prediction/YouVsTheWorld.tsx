@@ -1,4 +1,4 @@
-﻿import { flagEmoji } from "@/lib/flags";
+﻿import { CountryFlag } from "@/components/CountryFlag";
 import { getEntryNoun } from "@/lib/events";
 import { getEligiblePredictionsForComparison, type PredictionRecord } from "@/lib/predictions-db";
 import { getParticipantsForEvent } from "@/lib/participants";
@@ -96,9 +96,9 @@ export async function YouVsTheWorld({
                 Same winner
               </p>
               <p className="mt-2 text-text-primary">
-                {flagEmoji(
-                  participantsById.get(comparison.sameWinner.participantId)?.countryCode ?? "",
-                )}{" "}
+                <CountryFlag
+                  countryCode={participantsById.get(comparison.sameWinner.participantId)?.countryCode}
+                />{" "}
                 {participantsById.get(comparison.sameWinner.participantId)?.displayName} —{" "}
                 {comparison.sameWinner.count === 0
                   ? "nobody else made the same call."
@@ -126,7 +126,9 @@ export async function YouVsTheWorld({
           {comparison.boldestPick ? (
             <div>
               <p className="font-display text-4xl text-text-primary">
-                {flagEmoji(participantsById.get(comparison.boldestPick.participantId)?.countryCode ?? "")}{" "}
+                <CountryFlag
+                  countryCode={participantsById.get(comparison.boldestPick.participantId)?.countryCode}
+                />{" "}
                 {participantsById.get(comparison.boldestPick.participantId)?.displayName}
               </p>
               <p className="mt-1 text-sm uppercase tracking-[0.15em] text-text-secondary">
@@ -158,7 +160,7 @@ export async function YouVsTheWorld({
                       <span className="font-display w-7 shrink-0 text-sm text-accent-strong">
                         {String(index + 1).padStart(2, "0")}
                       </span>
-                      <span aria-hidden>{flagEmoji(participant.countryCode)}</span>
+                      <CountryFlag countryCode={participant.countryCode} />
                       <span className="flex-1 text-sm text-text-primary">
                         {participant.displayName}
                       </span>

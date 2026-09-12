@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { flagEmoji } from "@/lib/flags";
+import { CountryFlag } from "@/components/CountryFlag";
 import { siteUrl } from "@/lib/site";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
@@ -68,7 +68,7 @@ export default async function PublicPredictionPage({
       </p>
 
       {prediction.countryCode ? (
-        <p className="mt-1 text-sm text-text-muted">{flagEmoji(prediction.countryCode)}</p>
+        <p className="mt-1 text-sm text-text-muted"><CountryFlag countryCode={prediction.countryCode} /></p>
       ) : null}
 
       {prediction.dataStatus === "demo" ? (

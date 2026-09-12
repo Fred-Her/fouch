@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { ChevronUp, ChevronDown, X } from "lucide-react";
-import { flagEmoji } from "@/lib/flags";
+import { CountryFlag } from "@/components/CountryFlag";
 import type { Participant } from "@/types/participant";
 
 export function TopTenList({
@@ -35,9 +35,7 @@ export function TopTenList({
           <span className="font-display w-6 shrink-0 text-sm text-accent-strong">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <span aria-hidden className="text-lg">
-            {flagEmoji(participant.countryCode)}
-          </span>
+          <CountryFlag countryCode={participant.countryCode} className="text-lg" />
           <span className="flex-1 truncate text-sm text-text-primary">
             {participant.displayName}
           </span>

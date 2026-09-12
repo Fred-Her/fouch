@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { flagEmoji } from "@/lib/flags";
+import { CountryFlag } from "@/components/CountryFlag";
 import type { Participant } from "@/types/participant";
 
 export function ParticipantBrowser({
@@ -65,9 +65,7 @@ export function ParticipantBrowser({
                     selected ? "text-accent-strong" : "text-text-primary hover:text-accent-strong"
                   }`}
                 >
-                  <span aria-hidden className="text-lg">
-                    {flagEmoji(participant.countryCode)}
-                  </span>
+                  <CountryFlag countryCode={participant.countryCode} className="text-lg" />
                   <span className="flex-1 text-sm">{participant.displayName}</span>
                   {selected ? (
                     <span className="text-xs font-medium uppercase tracking-wide">Selected</span>
