@@ -2,13 +2,28 @@
 import { getEntryNoun } from "@/lib/events";
 import { getEligiblePredictionsForComparison, type PredictionRecord } from "@/lib/predictions-db";
 import { getParticipantsForEvent } from "@/lib/participants";
-import { computeComparison, getSampleSizeBucket } from "@/lib/community-comparison";
+import {
+  computeComparison,
+  getSampleSizeBucket,
+  getComparisonDisplayMode,
+} from "@/lib/community-comparison";
 import type { FouchEvent } from "@/types/event";
 import { ShareYourCallCta } from "./ShareYourCallCta";
 import { YouVsTheWorldTracker } from "./YouVsTheWorldTracker";
 
 function formatPct(pct: number): string {
   return `${Math.round(pct * 100)}%`;
+}
+
+/**
+ * Sprint 3.1: for a small sample, "X of Y" is honest; a percentage
+ * ("25%") implies more statistical weight than 1-of-4 actually
+ * carries. Every place that shows a ratio goes through this one
+ * function instead of each component deciding for itself.
+ */
+function formatRatio(count: number, population: number, mode: ReturnType<typeof getComparisonDisplayMode>): string {
+  if (mode === "count") return `${count} OF ${population}`;
+  return formatPct(count / population);
 }
 
 export async function YouVsTheWorld({
@@ -28,6 +43,7 @@ export async function YouVsTheWorld({
   const eligible = await getEligiblePredictionsForComparison(event.slug, prediction.dataStatus);
   const comparison = computeComparison(prediction.rankedParticipantIds, eligible, prediction.id);
   const bucket = getSampleSizeBucket(comparison.population);
+  const mode = getComparisonDisplayMode(comparison.population);
   const pluralNoun = getEntryNoun(event, true);
 
   return (
@@ -51,7 +67,7 @@ export async function YouVsTheWorld({
         </p>
       ) : null}
 
-      {bucket === "0" ? (
+      {mode === "none" ? (
         <div className="mt-6">
           <p className="font-display text-xl text-text-primary">You&apos;re early.</p>
           <p className="mt-1 text-sm text-text-secondary">Be the first to set the pace.</p>
@@ -74,7 +90,7 @@ export async function YouVsTheWorld({
           {comparison.sameWinner ? (
             <div>
               <p className="font-display text-6xl text-accent-strong">
-                {formatPct(comparison.sameWinner.pct)}
+                {formatRatio(comparison.sameWinner.count, comparison.population, mode)}
               </p>
               <p className="mt-1 text-sm uppercase tracking-[0.15em] text-text-secondary">
                 Same winner
@@ -86,7 +102,9 @@ export async function YouVsTheWorld({
                 {participantsById.get(comparison.sameWinner.participantId)?.displayName} —{" "}
                 {comparison.sameWinner.count === 0
                   ? "nobody else made the same call."
-                  : `${comparison.sameWinner.count} of ${comparison.population} other predictions agree.`}
+                  : mode === "count"
+                    ? `${comparison.sameWinner.count} of ${comparison.population} other predictions agree.`
+                    : `${formatPct(comparison.sameWinner.pct)} of the world agrees. Based on ${comparison.population} other predictions.`}
               </p>
             </div>
           ) : null}
@@ -115,8 +133,9 @@ export async function YouVsTheWorld({
                 Your boldest call
               </p>
               <p className="mt-2 text-text-primary">
-                Only {formatPct(comparison.boldestPick.inclusionPct)} of other predictions have
-                this in their top 10.
+                {mode === "count"
+                  ? `Only ${comparison.boldestPick.count} of ${comparison.population} other predictions have this in their top 10.`
+                  : `Only ${formatPct(comparison.boldestPick.inclusionPct)} of other predictions have this in their top 10.`}
               </p>
             </div>
           ) : null}
@@ -124,6 +143,9 @@ export async function YouVsTheWorld({
           {comparison.communityTop10.length > 0 ? (
             <div>
               <p className="font-display text-xl text-text-primary">The world&apos;s top 10</p>
+              <p className="mt-1 text-xs text-text-muted">
+                Ranked by how high each pick appears across predictions.
+              </p>
               <ol className="mt-4 space-y-1.5">
                 {comparison.communityTop10.map((entry, index) => {
                   const participant = participantsById.get(entry.participantId);
@@ -140,8 +162,10 @@ export async function YouVsTheWorld({
                       <span className="flex-1 text-sm text-text-primary">
                         {participant.displayName}
                       </span>
-                      <span className="text-xs text-text-muted">
-                        {formatPct(entry.top10Count / comparison.population)} picked
+                      <span className="text-right text-xs text-text-muted">
+                        {formatRatio(entry.top10Count, comparison.population, mode)} picked
+                        <br />
+                        avg #{entry.averagePosition.toFixed(1)}
                       </span>
                     </li>
                   );

@@ -1,5 +1,10 @@
 ﻿import { describe, it, expect } from "vitest";
-import { computeComparison, computeCommunityTop10, getSampleSizeBucket } from "./community-comparison";
+import {
+  computeComparison,
+  computeCommunityTop10,
+  getSampleSizeBucket,
+  getComparisonDisplayMode,
+} from "./community-comparison";
 import type { EligiblePrediction } from "./community-comparison";
 
 // Fixtures straight from the Sprint 3 brief, section 32.
@@ -54,7 +59,7 @@ describe("computeComparison — viewing prediction A (self-excluded, world = B &
   });
 
   it("boldest pick: E never appears in B or C — the least common of A's top 5", () => {
-    expect(result.boldestPick).toEqual({ participantId: "E", inclusionPct: 0 });
+    expect(result.boldestPick).toEqual({ participantId: "E", count: 0, inclusionPct: 0 });
   });
 
   it("community top 10 excludes the 11th-ranked participant (Q) and orders by points", () => {
@@ -89,8 +94,7 @@ describe("computeComparison — zero eligible predictions", () => {
   });
 });
 
-describe("computeCommunityTop10 — deterministic tie-breaking", () => {
-  it("breaks a points tie using first-place count, then top-3 count, then top-10 count, then participant ID", () => {
+describe("computeCommunityTop10 — deterministic tie-breaking", () => {  it("breaks a points tie using first-place count, then top-3 count, then top-10 count, then participant ID", () => {
     // X and Y both score 7 points total (one 4th-place finish each: 11-4=7).
     // Z scores 7 points via a single #1 finish (11-1=10)... adjusted below
     // to isolate each tiebreaker independently.
@@ -120,5 +124,112 @@ describe("computeCommunityTop10 — deterministic tie-breaking", () => {
     const ranking = computeCommunityTop10(tied);
     expect(ranking[0]?.participantId).toBe("Apple");
     expect(ranking[1]?.participantId).toBe("Zebra");
+  });
+});
+
+describe("getComparisonDisplayMode — Sprint 3.1 thresholds, centralized", () => {
+  it.each([
+    [0, "none"],
+    [1, "count"],
+    [4, "count"],
+    [5, "early_signal"],
+    [9, "early_signal"],
+    [10, "normal"],
+    [47, "normal"],
+  ])("population %i -> %s", (population, expected) => {
+    expect(getComparisonDisplayMode(population)).toBe(expected);
+  });
+
+  it("agrees with getSampleSizeBucket's tiers (no drift between the two)", () => {
+    for (let n = 0; n <= 30; n++) {
+      const bucket = getSampleSizeBucket(n);
+      const mode = getComparisonDisplayMode(n);
+      if (bucket === "0") expect(mode).toBe("none");
+      if (bucket === "1_4") expect(mode).toBe("count");
+      if (bucket === "5_9") expect(mode).toBe("early_signal");
+      if (bucket !== "0" && bucket !== "1_4" && bucket !== "5_9") expect(mode).toBe("normal");
+    }
+  });
+});
+
+describe("Sprint 3.1 — Test 1: small-sample counts stay the primary data", () => {
+  it("population=4, same winner count=1 exposes both count and denominator for COUNT presentation", () => {
+    const predictions: EligiblePrediction[] = [
+      { predictionId: "self", rankedParticipantIds: ["W", "_", "_", "_", "_", "_", "_", "_", "_", "_"] },
+      { predictionId: "p1", rankedParticipantIds: ["W", "_", "_", "_", "_", "_", "_", "_", "_", "_"] },
+      { predictionId: "p2", rankedParticipantIds: ["X", "_", "_", "_", "_", "_", "_", "_", "_", "_"] },
+      { predictionId: "p3", rankedParticipantIds: ["X", "_", "_", "_", "_", "_", "_", "_", "_", "_"] },
+      { predictionId: "p4", rankedParticipantIds: ["X", "_", "_", "_", "_", "_", "_", "_", "_", "_"] },
+    ];
+    const self = predictions[0]!;
+    const result = computeComparison(self.rankedParticipantIds, predictions, "self");
+    expect(result.population).toBe(4);
+    expect(result.sameWinner).toEqual({ participantId: "W", count: 1, pct: 0.25 });
+    expect(getComparisonDisplayMode(result.population)).toBe("count");
+  });
+});
+
+describe("Sprint 3.1 — Test 2: threshold transition", () => {
+  function predictionsOfSize(n: number): EligiblePrediction[] {
+    return Array.from({ length: n }, (_, i) => ({
+      predictionId: `p${i}`,
+      rankedParticipantIds: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+    }));
+  }
+
+  it("n=4 -> count mode, n=5 -> early_signal, n=9 -> early_signal, n=10 -> normal", () => {
+    expect(getComparisonDisplayMode(predictionsOfSize(4).length)).toBe("count");
+    expect(getComparisonDisplayMode(predictionsOfSize(5).length)).toBe("early_signal");
+    expect(getComparisonDisplayMode(predictionsOfSize(9).length)).toBe("early_signal");
+    expect(getComparisonDisplayMode(predictionsOfSize(10).length)).toBe("normal");
+  });
+});
+
+describe("Sprint 3.1 — Test 3 & 4: average predicted position", () => {
+  it("Test 3: participant selected at #1, #3, #5 averages to 3.0", () => {
+    const predictions: EligiblePrediction[] = [
+      { predictionId: "p1", rankedParticipantIds: ["Chile"] },
+      { predictionId: "p2", rankedParticipantIds: ["_", "_", "Chile"] },
+      { predictionId: "p3", rankedParticipantIds: ["_", "_", "_", "_", "Chile"] },
+    ];
+    const ranking = computeCommunityTop10(predictions);
+    const chile = ranking.find((entry) => entry.participantId === "Chile");
+    expect(chile?.averagePosition).toBe(3.0);
+  });
+
+  it("Test 4: absence is never counted as a position — average uses only predictions containing the participant", () => {
+    const predictions: EligiblePrediction[] = [
+      { predictionId: "p1", rankedParticipantIds: ["_", "Chile"] }, // Chile at #2
+      { predictionId: "p2", rankedParticipantIds: ["_", "_", "_", "Chile"] }, // Chile at #4
+      { predictionId: "p3", rankedParticipantIds: ["Other"] }, // Chile absent
+      { predictionId: "p4", rankedParticipantIds: ["Other"] }, // Chile absent
+    ];
+    const ranking = computeCommunityTop10(predictions);
+    const chile = ranking.find((entry) => entry.participantId === "Chile");
+    expect(chile?.top10Count).toBe(2);
+    expect(chile?.averagePosition).toBe(3.0); // (2 + 4) / 2, NOT (2 + 4 + 11 + 11) / 4
+  });
+});
+
+describe("Sprint 3.1 — Test 5: average rank never changes the ranking order", () => {
+  it("Participant A (higher weighted score, lower inclusion) stays above Participant B (lower score, higher inclusion)", () => {
+    const predictions: EligiblePrediction[] = [
+      // A appears once, at #1 (10 points) -> high score, low inclusion (1 prediction).
+      { predictionId: "p1", rankedParticipantIds: ["A"] },
+      // B appears in three predictions, always at #9 (2 points each = 6 total) -> lower score, higher inclusion.
+      { predictionId: "p2", rankedParticipantIds: ["_", "_", "_", "_", "_", "_", "_", "_", "B"] },
+      { predictionId: "p3", rankedParticipantIds: ["_", "_", "_", "_", "_", "_", "_", "_", "B"] },
+      { predictionId: "p4", rankedParticipantIds: ["_", "_", "_", "_", "_", "_", "_", "_", "B"] },
+    ];
+    const ranking = computeCommunityTop10(predictions);
+    const a = ranking.find((entry) => entry.participantId === "A");
+    const b = ranking.find((entry) => entry.participantId === "B");
+
+    expect(a?.points).toBe(10);
+    expect(b?.points).toBe(6);
+    expect(a!.top10Count).toBeLessThan(b!.top10Count); // A has lower inclusion...
+    expect(ranking.findIndex((e) => e.participantId === "A")).toBeLessThan(
+      ranking.findIndex((e) => e.participantId === "B"),
+    ); // ...but still ranks above B, because points (the approved formula) still decide order.
   });
 });
