@@ -8,6 +8,12 @@ import { MIN_PERCENTILE_SAMPLE } from "@/lib/scoring";
 import { LeaderboardRow } from "@/components/scoring/LeaderboardRow";
 import { LeaderboardTracker } from "@/components/scoring/LeaderboardTracker";
 
+// Sprint 5.1: this route reads Supabase state that changes independently
+// of any URL parameter (a new prediction being scored, a result being
+// entered) — force fresh server execution on every request rather than
+// risk this being treated as a cacheable static/ISR route.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

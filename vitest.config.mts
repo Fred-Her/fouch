@@ -1,5 +1,4 @@
 ﻿import { defineConfig } from "vitest/config";
-import { resolve } from "node:path";
 
 // Vitest doesn't read tsconfig "paths" automatically. Previous test
 // files avoided this by only using relative imports; leaderboard.ts
@@ -8,7 +7,7 @@ import { resolve } from "node:path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": new URL("./src", import.meta.url).pathname,
     },
   },
 });

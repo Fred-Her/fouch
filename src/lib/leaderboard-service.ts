@@ -1,30 +1,22 @@
 ﻿import "server-only";
-import { scorePrediction, computePercentile } from "@/lib/scoring";
-import type { PercentileResult } from "@/lib/scoring";
+import { scorePrediction } from "@/lib/scoring";
 import { getOfficialResult } from "@/lib/results-db";
 import { getLeaderboardRawEntries } from "@/lib/predictions-db";
-import { buildLeaderboard } from "@/lib/leaderboard";
-import type { LeaderboardEntry } from "@/lib/leaderboard";
+import { buildLeaderboard, resolveViewerContext, LEADERBOARD_TOP_N } from "@/lib/leaderboard";
+import type { LeaderboardEntry, ViewerContext } from "@/lib/leaderboard";
 import type { ParticipantDataStatus } from "@/lib/participants";
-
-const TOP_N = 50;
-/** How many rows on either side of the viewer to show when they fall
- * outside the visible Top N (Sprint 5 brief §19). */
-const NEIGHBOR_WINDOW = 2;
 
 export interface EventLeaderboard {
   status: "no_result" | "scored";
   dataStatus: ParticipantDataStatus;
   totalCount: number;
   topEntries: LeaderboardEntry[];
-  /** Present only when a viewerPublicId was given and it resolved to
-   * an eligible, scored prediction for this event. */
-  viewer: {
-    entry: LeaderboardEntry;
-    /** Only populated when the viewer's rank falls outside topEntries. */
-    neighbors: LeaderboardEntry[];
-    percentile: PercentileResult;
-  } | null;
+  /** Present only when a viewerPublicId was given AND it resolved to
+   * an eligible, scored prediction on THIS leaderboard. Absent
+   * viewer context never affects `status` or `topEntries` above —
+   * see resolveViewerContext() in src/lib/leaderboard.ts, which this
+   * calls as a pure, separately-tested step. */
+  viewer: ViewerContext | null;
 }
 
 /**
@@ -35,7 +27,9 @@ export interface EventLeaderboard {
  *
  * Returns `{ status: "no_result" }` when there's no official/demo
  * result yet — the page renders a "leaderboard locked" state, never a
- * fabricated empty board (brief §28).
+ * fabricated empty board (brief §28). This decision is made BEFORE
+ * `viewerPublicId` is even read below — the leaderboard's existence
+ * can never depend on who's asking (Sprint 5.1 fix).
  */
 export async function getEventLeaderboard(
   eventSlug: string,
@@ -63,30 +57,14 @@ export async function getEventLeaderboard(
     })),
   );
 
-  const topEntries = leaderboard.slice(0, TOP_N);
+  const fullPrecisionScoreByPublicId = new Map(scored.map((e) => [e.publicId, e.breakdown.score]));
+  const viewer = resolveViewerContext(leaderboard, fullPrecisionScoreByPublicId, viewerPublicId);
 
-  let viewer: EventLeaderboard["viewer"] = null;
-  if (viewerPublicId) {
-    const viewerIndex = leaderboard.findIndex((e) => e.publicId === viewerPublicId);
-    if (viewerIndex !== -1) {
-      const viewerEntry = leaderboard[viewerIndex]!;
-      const viewerScored = scored.find((e) => e.publicId === viewerPublicId)!;
-      const otherScores = scored
-        .filter((e) => e.publicId !== viewerPublicId)
-        .map((e) => e.breakdown.score);
-      const percentile = computePercentile(viewerScored.breakdown.score, otherScores);
-
-      const inTop = viewerIndex < TOP_N;
-      const neighbors = inTop
-        ? []
-        : leaderboard.slice(
-            Math.max(0, viewerIndex - NEIGHBOR_WINDOW),
-            Math.min(leaderboard.length, viewerIndex + NEIGHBOR_WINDOW + 1),
-          );
-
-      viewer = { entry: viewerEntry, neighbors, percentile };
-    }
-  }
-
-  return { status: "scored", dataStatus, totalCount: leaderboard.length, topEntries, viewer };
+  return {
+    status: "scored",
+    dataStatus,
+    totalCount: leaderboard.length,
+    topEntries: leaderboard.slice(0, LEADERBOARD_TOP_N),
+    viewer,
+  };
 }

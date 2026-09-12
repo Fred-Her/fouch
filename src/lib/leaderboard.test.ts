@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect } from "vitest";
-import { assignCompetitionRanks, buildLeaderboard } from "./leaderboard";
+import { assignCompetitionRanks, buildLeaderboard, resolveViewerContext } from "./leaderboard";
 
 describe("assignCompetitionRanks — competition ranking (1224, never dense 1223)", () => {
   it("[95,90,85,80] -> [1,2,3,4]", () => {
@@ -54,5 +54,55 @@ describe("buildLeaderboard", () => {
       { publicId: "earlier", nickname: null, countryCode: null, displayScore: 80 },
     ]);
     expect(entries[0]?.publicId).toBe("earlier");
+  });
+});
+
+describe("resolveViewerContext — Sprint 5.1: viewer context is structurally separate from leaderboard existence", () => {
+  const board = buildLeaderboard([
+    { publicId: "pef", nickname: "Pef", countryCode: null, displayScore: 61 },
+    { publicId: "fred1", nickname: "Fred", countryCode: null, displayScore: 25 },
+    { publicId: "fred2", nickname: "FRED", countryCode: null, displayScore: 25 },
+    { publicId: "ghera", nickname: "Ghera", countryCode: "CL", displayScore: 22 },
+    { publicId: "gg", nickname: "gg", countryCode: null, displayScore: 13 },
+  ]);
+  const scores = new Map([
+    ["pef", 61],
+    ["fred1", 25],
+    ["fred2", 25],
+    ["ghera", 22],
+    ["gg", 13],
+  ]);
+
+  it("Case A: no `from` -> no viewer, no crash, board itself is untouched", () => {
+    const viewer = resolveViewerContext(board, scores, undefined);
+    expect(viewer).toBeNull();
+    expect(board).toHaveLength(5); // the board array itself was never mutated
+  });
+
+  it("Case B: valid `from` -> correct entry, rank #4 of 5, matches the production example", () => {
+    const viewer = resolveViewerContext(board, scores, "ghera");
+    expect(viewer?.entry.rank).toBe(4);
+    expect(viewer?.entry.score).toBe(22);
+    expect(viewer?.entry.nickname).toBe("Ghera");
+  });
+
+  it("Case C: invalid/unknown `from` -> null, no throw", () => {
+    expect(() => resolveViewerContext(board, scores, "not-a-real-id")).not.toThrow();
+    expect(resolveViewerContext(board, scores, "not-a-real-id")).toBeNull();
+  });
+
+  it("Case D: `from` belongs to a prediction not on this leaderboard (e.g. another event) -> null", () => {
+    // Simulates a publicId that is valid *somewhere*, just not in this
+    // event's leaderboard array — the exact situation a cross-event or
+    // stale ID produces once this leaderboard was built independently.
+    const viewer = resolveViewerContext(board, scores, "some-other-events-prediction");
+    expect(viewer).toBeNull();
+  });
+
+  it("Case H: shared tie ranking is preserved when a tied entry is the viewer", () => {
+    const viewer = resolveViewerContext(board, scores, "fred1");
+    expect(viewer?.entry.rank).toBe(2);
+    const otherTied = resolveViewerContext(board, scores, "fred2");
+    expect(otherTied?.entry.rank).toBe(2);
   });
 });

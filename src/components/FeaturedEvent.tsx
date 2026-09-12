@@ -1,6 +1,8 @@
 ﻿import { ArrowRight } from "lucide-react";
 import type { Dictionary } from "@/content/types";
 import type { FouchEvent } from "@/types/event";
+import { getParticipantsForEvent } from "@/lib/participants";
+import { getOfficialResult } from "@/lib/results-db";
 import { TrackedLink } from "./TrackedLink";
 
 const statusLabel: Record<FouchEvent["status"], string> = {
@@ -10,7 +12,7 @@ const statusLabel: Record<FouchEvent["status"], string> = {
   completed: "Completed",
 };
 
-export function FeaturedEvent({
+export async function FeaturedEvent({
   event,
   dictionary,
 }: {
@@ -21,6 +23,14 @@ export function FeaturedEvent({
   const dayMonth = date
     .toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
     .toUpperCase();
+
+  // Sprint 5.1: the secondary leaderboard link is event/result-state
+  // driven, never hardcoded to a specific slug — it only appears once
+  // an official/demo result genuinely exists to rank against.
+  const participantData = getParticipantsForEvent(event.slug);
+  const hasLeaderboard = participantData
+    ? Boolean(await getOfficialResult(event.slug, participantData.status))
+    : false;
 
   // Decorative only — a preview of the ranking mechanic, not real input.
   const previewSlots = [1, 2, 3];
@@ -75,18 +85,31 @@ export function FeaturedEvent({
           ))}
         </div>
 
-        <TrackedLink
-          href={`/predict/${event.slug}`}
-          event="featured_event_clicked"
-          eventProperties={{ slug: event.slug }}
-          className="group mt-8 inline-flex items-center gap-2 rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
-        >
-          {dictionary.featuredEvent.cta}
-          <ArrowRight
-            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-            aria-hidden
-          />
-        </TrackedLink>
+        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <TrackedLink
+            href={`/predict/${event.slug}`}
+            event="featured_event_clicked"
+            eventProperties={{ slug: event.slug }}
+            className="group inline-flex items-center gap-2 rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
+          >
+            {dictionary.featuredEvent.cta}
+            <ArrowRight
+              className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden
+            />
+          </TrackedLink>
+
+          {hasLeaderboard ? (
+            <TrackedLink
+              href={`/events/${event.slug}/leaderboard`}
+              event="leaderboard_from_score_clicked"
+              eventProperties={{ event_slug: event.slug, source: "home" }}
+              className="text-sm text-text-secondary transition-colors hover:text-accent-strong"
+            >
+              View leaderboard →
+            </TrackedLink>
+          ) : null}
+        </div>
       </div>
     </section>
   );
