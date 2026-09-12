@@ -13,12 +13,19 @@ export function PublicPredictionView({
   eventSlug,
   publicId,
   rankedParticipants,
+  hasResult = false,
   fouchScore,
   youVsTheWorld,
 }: {
   eventSlug: string;
   publicId: string;
   rankedParticipants: Participant[];
+  /** Sprint 4.1: whether an official/demo result exists for this
+   * prediction's event. Drives share-CTA hierarchy only — the original
+   * Prediction Card share section becomes visually secondary once a
+   * Result Card exists to share instead (brief §7-8). Does not affect
+   * scoring or any calculation. */
+  hasResult?: boolean;
   /** FOUCH Score section (Sprint 4) — null/absent renders nothing, which
    * is exactly the pre-result experience. Server Component, passed down
    * for the same reason as youVsTheWorld below. */
@@ -45,6 +52,28 @@ export function PublicPredictionView({
 
   const publicUrl = `${siteUrl}/p/${publicId}`;
 
+  const originalPredictionShare = (
+    <div id="share" className="mt-10 scroll-mt-20 border-t border-border pt-8">
+      <p
+        className={
+          hasResult
+            ? "text-sm text-text-muted"
+            : "font-display text-lg text-text-primary"
+        }
+      >
+        {hasResult ? "Your original prediction" : "Share your prediction"}
+      </p>
+      <div className="mt-3">
+        <ShareActions
+          eventSlug={eventSlug}
+          publicUrl={publicUrl}
+          storyCardUrl={`/p/${publicId}/card/story`}
+          postCardUrl={`/p/${publicId}/card/post`}
+        />
+      </div>
+    </div>
+  );
+
   return (
     <div>
       {isNew ? (
@@ -70,6 +99,13 @@ export function PublicPredictionView({
 
       {youVsTheWorld}
 
+      {/* Pre-result: original prediction sharing stays primary and sits
+          right before the "Make your Top 10" CTA, unchanged from Sprint 2/3.
+          Post-result: it becomes a secondary, de-emphasized block, per the
+          hierarchy in Sprint 4.1's brief (Result Card is the stronger
+          social object once scoring exists). */}
+      {!hasResult ? originalPredictionShare : null}
+
       <Link
         href={`/predict/${eventSlug}?from=${publicId}`}
         onClick={() => track("public_prediction_cta_clicked", { event_slug: eventSlug })}
@@ -78,17 +114,7 @@ export function PublicPredictionView({
         Make your Top 10
       </Link>
 
-      <div id="share" className="mt-10 scroll-mt-20 border-t border-border pt-8">
-        <p className="font-display text-lg text-text-primary">Share your prediction</p>
-        <div className="mt-3">
-          <ShareActions
-            eventSlug={eventSlug}
-            publicUrl={publicUrl}
-            storyCardUrl={`/p/${publicId}/card/story`}
-            postCardUrl={`/p/${publicId}/card/post`}
-          />
-        </div>
-      </div>
+      {hasResult ? originalPredictionShare : null}
     </div>
   );
 }

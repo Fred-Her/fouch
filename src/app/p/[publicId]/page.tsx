@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CountryFlag } from "@/components/CountryFlag";
 import { siteUrl } from "@/lib/site";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
+import { getOfficialResult } from "@/lib/results-db";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
 import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
 import { FouchScore } from "@/components/scoring/FouchScore";
@@ -57,6 +58,14 @@ export default async function PublicPredictionPage({
   const { prediction, event, rankedParticipants } = record;
   const heading = prediction.nickname ? `${prediction.nickname}'s Top 10` : "Someone's Top 10";
 
+  // Cheap existence check only (no percentile/breakdown work) — used
+  // purely to decide share-CTA hierarchy (Sprint 4.1 §7-8). FouchScore
+  // below independently does the full scored computation; this is a
+  // second, lightweight read of the same result row, not duplicated
+  // scoring logic.
+  const official = await getOfficialResult(event.slug, prediction.dataStatus);
+  const hasResult = Boolean(official);
+
   return (
     <main className="mx-auto max-w-content px-6 py-8">
       <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
@@ -82,6 +91,7 @@ export default async function PublicPredictionPage({
         eventSlug={event.slug}
         publicId={publicId}
         rankedParticipants={rankedParticipants}
+        hasResult={hasResult}
         fouchScore={<FouchScore prediction={prediction} event={event} publicId={publicId} />}
         youVsTheWorld={<YouVsTheWorld prediction={prediction} event={event} />}
       />

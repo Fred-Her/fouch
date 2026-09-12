@@ -1,8 +1,10 @@
 ﻿import { getEntryNoun } from "@/lib/events";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { getPredictionScore } from "@/lib/scoring-service";
+import { getOfficialResult } from "@/lib/results-db";
 import { MIN_PERCENTILE_SAMPLE } from "@/lib/scoring";
 import { siteUrl } from "@/lib/site";
+import { CountryFlag } from "@/components/CountryFlag";
 import type { PredictionRecord } from "@/lib/predictions-db";
 import type { FouchEvent } from "@/types/event";
 import type { ScoreBand } from "@/types/scoring";
@@ -17,11 +19,21 @@ const BAND_LABEL: Record<ScoreBand, string> = {
   ELITE: "Elite call",
 };
 
+/** "8.333..." -> "8.3", "25.0" -> "25" — one decimal, no trailing ".0". */
+function formatPoints(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
 /**
  * Renders nothing (returns null) when there's no official result yet —
  * the pre-result experience is unchanged, never a fabricated score.
  * Server Component: fetches + scores server-side, only the final
  * numbers reach the client (via the tracker's props, not raw data).
+ *
+ * Sprint 4.1: UI clarity only. Every number below comes straight from
+ * the existing score engine's ScoreBreakdown — nothing here
+ * recalculates or duplicates scoring logic.
  */
 export async function FouchScore({
   prediction,
@@ -40,6 +52,11 @@ export async function FouchScore({
   );
   if (!result) return null;
 
+  // Re-reads the same official-result row already used inside
+  // getPredictionScore, purely to display who the actual winner was —
+  // no scoring logic is duplicated, only a read.
+  const official = await getOfficialResult(event.slug, prediction.dataStatus);
+
   const participantData = getParticipantsForEvent(event.slug);
   const participantsById = new Map(
     (participantData?.participants ?? []).map((participant) => [participant.id, participant]),
@@ -47,8 +64,10 @@ export async function FouchScore({
   const userWinnerPick = prediction.rankedParticipantIds[0]
     ? participantsById.get(prediction.rankedParticipantIds[0])
     : undefined;
+  const actualWinner = official ? participantsById.get(official.winner) : undefined;
   const pluralNoun = getEntryNoun(event, true);
   const { breakdown, percentile } = result;
+  const { winner, podium, top5, top10, ranking } = breakdown.components;
 
   return (
     <section className="mt-12 border-t border-border pt-10">
@@ -79,41 +98,80 @@ export async function FouchScore({
         </p>
       ) : (
         <p className="mt-2 text-xs text-text-muted">
-          Not enough predictions yet for a world ranking (needs {MIN_PERCENTILE_SAMPLE}+).
+          World ranking unlocks at {MIN_PERCENTILE_SAMPLE} predictions.
         </p>
       )}
 
-      <dl className="mt-6 space-y-2 text-sm">
-        <div className="flex items-center justify-between border-b border-border pb-2">
-          <dt className="text-text-secondary">Winner</dt>
-          <dd className="text-text-primary">
-            {breakdown.components.winner.hit ? "✓ Correct" : "✗ Missed"}
-            {userWinnerPick ? ` — your pick: ${userWinnerPick.displayName}` : null}
+      <dl className="mt-6 space-y-3 text-sm">
+        <div className="border-b border-border pb-3">
+          <dt className="flex items-center justify-between">
+            <span className="text-text-secondary">Winner</span>
+            <span className="text-text-muted">{formatPoints(winner.earned)} / {winner.max}</span>
+          </dt>
+          <dd className="mt-2">
+            {winner.hit ? (
+              <span className="inline-flex items-center gap-1.5 text-accent-strong">
+                ✓
+                {userWinnerPick ? (
+                  <>
+                    <CountryFlag countryCode={userWinnerPick.countryCode} />
+                    {userWinnerPick.displayName}
+                  </>
+                ) : (
+                  "Correct"
+                )}
+              </span>
+            ) : (
+              <div className="space-y-1 text-text-primary">
+                <p className="flex items-center gap-1.5">
+                  <span className="text-text-muted">✗ Missed — your pick:</span>
+                  {userWinnerPick ? (
+                    <>
+                      <CountryFlag countryCode={userWinnerPick.countryCode} />
+                      {userWinnerPick.displayName}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </p>
+                {actualWinner ? (
+                  <p className="flex items-center gap-1.5 text-text-secondary">
+                    <span className="text-text-muted">Actual:</span>
+                    <CountryFlag countryCode={actualWinner.countryCode} />
+                    {actualWinner.displayName}
+                  </p>
+                ) : null}
+              </div>
+            )}
           </dd>
         </div>
-        <div className="flex items-center justify-between border-b border-border pb-2">
+
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Podium</dt>
           <dd className="text-text-primary">
-            {breakdown.components.podium.hits} / {breakdown.components.podium.total}
+            {podium.hits} of {podium.total} · {formatPoints(podium.earned)} / {podium.max}
           </dd>
         </div>
-        <div className="flex items-center justify-between border-b border-border pb-2">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Top 5</dt>
           <dd className="text-text-primary">
-            {breakdown.components.top5.hits} / {breakdown.components.top5.total}
+            {top5.hits} of {top5.total} · {formatPoints(top5.earned)} / {top5.max}
           </dd>
         </div>
-        <div className="flex items-center justify-between border-b border-border pb-2">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Top 10</dt>
           <dd className="text-text-primary">
-            {breakdown.components.top10.hits} / {breakdown.components.top10.total}
+            {top10.hits} of {top10.total} · {formatPoints(top10.earned)} / {top10.max}
           </dd>
         </div>
-        <div className="flex items-center justify-between">
-          <dt className="text-text-secondary">Ranking</dt>
-          <dd className="text-text-primary">
-            {breakdown.components.ranking.earned.toFixed(1)} / {breakdown.components.ranking.max}
-          </dd>
+        <div>
+          <div className="flex items-center justify-between">
+            <dt className="text-text-secondary">Ranking</dt>
+            <dd className="text-text-primary">
+              {formatPoints(ranking.earned)} / {ranking.max}
+            </dd>
+          </div>
+          <p className="mt-1 text-xs text-text-muted">How close your picks were to the official finish.</p>
         </div>
       </dl>
 
