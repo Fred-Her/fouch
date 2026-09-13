@@ -1,4 +1,4 @@
-# Fouch
+﻿# Fouch
 
 Fouch is a worldwide social entertainment-prediction platform. The core
 loop is **Predict → Compete → Score → Share**. The initial wedge is
@@ -45,7 +45,8 @@ See `.env.example` for the full list. Summary:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No | Public anon key, safe for the browser. |
 | `SUPABASE_SERVICE_ROLE_KEY` | No | **Server-only.** Never prefix with `NEXT_PUBLIC_`. Only imported from `src/lib/supabase/server.ts`, which is marked `server-only`. |
 | `NEXT_PUBLIC_SITE_URL` | No (has a fallback) | Used for absolute URLs in metadata, OG, sitemap, robots. |
-| `NEXT_PUBLIC_ANALYTICS_ENABLED` / `NEXT_PUBLIC_POSTHOG_KEY` | No | Analytics silently no-ops until these exist — see `src/lib/analytics.ts`. |
+| `NEXT_PUBLIC_POSTHOG_KEY` | No | PostHog project API key. Without it, analytics falls back to a harmless console.debug — see `src/lib/analytics.ts`. |
+| `NEXT_PUBLIC_POSTHOG_HOST` | No | Defaults to `https://us.i.posthog.com`; only needed for a self-hosted or EU-region PostHog instance. |
 
 ## Supabase setup (when you're ready to use it)
 

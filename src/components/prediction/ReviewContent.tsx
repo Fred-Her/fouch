@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { CountryFlag } from "@/components/CountryFlag";
 import { track } from "@/lib/analytics";
+import { captureUtmSource } from "@/lib/attribution";
 import { loadPrediction, clearPrediction } from "@/lib/prediction-storage";
 import { getDeviceToken } from "@/lib/device-token";
 import { checkExistingSubmission, submitPrediction } from "@/app/predict/[slug]/actions";
@@ -60,18 +61,34 @@ export function ReviewContent({
   }, [rankedIds]);
 
   async function handleSubmit(nickname: string, countryCode: string) {
+    // Guard against a rapid double-click firing two submissions before
+    // React re-renders the disabled button.
+    if (submitting) return;
+
     setSubmitting(true);
     setErrorMessage(null);
+    const utmSource = captureUtmSource();
     track("prediction_submit_started", { event_slug: eventSlug });
 
-    const deviceToken = getDeviceToken();
-    const result = await submitPrediction({
-      eventSlug,
-      participantIds: rankedIds ?? [],
-      nickname: nickname.trim() || undefined,
-      countryCode: countryCode || undefined,
-      deviceToken,
-    });
+    let result;
+    try {
+      const deviceToken = getDeviceToken();
+      result = await submitPrediction({
+        eventSlug,
+        participantIds: rankedIds ?? [],
+        nickname: nickname.trim() || undefined,
+        countryCode: countryCode || undefined,
+        deviceToken,
+      });
+    } catch {
+      // Network/server failure reaching the Server Action itself (not a
+      // validation rejection — those return {success:false} normally,
+      // handled below). The local Top 10 draft is untouched either way
+      // (clearPrediction only runs on confirmed success, further down).
+      setErrorMessage("We couldn't lock your prediction. Your Top 10 is still saved — try again.");
+      setSubmitting(false);
+      return;
+    }
 
     if (!result.success) {
       setErrorMessage(result.error);
@@ -79,7 +96,8 @@ export function ReviewContent({
       return;
     }
 
-    track("prediction_submitted", { event_slug: eventSlug });
+    // Fires only after confirmed success — never on a caught failure above.
+    track("prediction_submitted", { event_slug: eventSlug, ...(utmSource ? { utm_source: utmSource } : {}) });
     clearPrediction(eventSlug);
     router.push(`/p/${result.publicId}?new=1`);
   }

@@ -1,17 +1,65 @@
 ﻿/**
- * Minimal analytics seam.
+ * Analytics seam — Beta Hardening 0.1.
  *
- * Intentionally NOT wired to PostHog (or any provider) yet — adding an
- * SDK before we know we need it is dead weight. This gives every call
- * site a single, typed function to import, so plugging in a real
- * provider later is a one-file change instead of a hunt through
- * components. Never throws, never blocks rendering, and is silent
- * when analytics isn't configured (e.g. local dev).
+ * Every call site still imports the same `track(event, properties)`
+ * function as before; only the transport underneath changed, from a
+ * console.debug stub to real PostHog capture. The contract is
+ * unchanged on purpose so no component needed to be touched.
+ *
+ * Configuration (set in Vercel):
+ *   NEXT_PUBLIC_POSTHOG_KEY  — PostHog project API key (public by
+ *     design — PostHog's own docs confirm this key is meant to be
+ *     browser-visible; it is not a secret).
+ *   NEXT_PUBLIC_POSTHOG_HOST — defaults to https://us.i.posthog.com
+ *     if unset; only needed for a self-hosted or EU-region instance.
+ *
+ * Without NEXT_PUBLIC_POSTHOG_KEY configured, track() falls back to
+ * the original console.debug behavior — nothing crashes, nothing is
+ * silently required. Analytics is always best-effort: every call is
+ * wrapped so a PostHog failure (network, ad blocker, misconfiguration)
+ * can never throw into product code. Prediction submission, sharing,
+ * and every public page must keep working exactly the same whether or
+ * not analytics succeeds.
  *
  * Properties must never carry personally identifiable information or
  * free-text nickname/contestant input — only structural values like
- * an event slug, a count, a position, or a share method.
+ * an event slug, a count, a position, or a share method. This function
+ * also never calls posthog.identify() — every event stays on
+ * PostHog's normal anonymous, cookie/localStorage-backed distinct_id.
+ * Connecting anonymous activity to a verified identity is explicitly
+ * deferred to Beta Hardening 0.2.
  */
+
+import posthog from "posthog-js";
+
+let posthogReady = false;
+
+function ensurePostHogInitialized(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!key) return false;
+
+  if (!posthogReady) {
+    try {
+      posthog.init(key, {
+        api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+        // Beta-appropriate defaults: no automatic pageview capture (we
+        // fire explicit, typed events already, e.g. landing_view), and
+        // no full "person" profile creation for anonymous beta traffic
+        // — keeps this cheap and avoids modeling identity we haven't
+        // decided on yet (that's Beta Hardening 0.2).
+        capture_pageview: false,
+        person_profiles: "identified_only",
+      });
+      posthogReady = true;
+    } catch {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 export type FouchAnalyticsEvent =
   | "landing_view"
@@ -52,10 +100,19 @@ export type FouchAnalyticsEvent =
 
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
-  if (!process.env.NEXT_PUBLIC_ANALYTICS_ENABLED) return;
 
-  // Placeholder sink until a provider (e.g. PostHog) is configured behind
-  // NEXT_PUBLIC_POSTHOG_KEY. Kept as a console log, not a network call,
-  // so this never depends on an external analytics endpoint.
+  try {
+    if (ensurePostHogInitialized()) {
+      posthog.capture(event, properties);
+      return;
+    }
+  } catch {
+    // Analytics must never break the product — fall through to the
+    // silent/dev-visible fallback below rather than propagate.
+  }
+
+  // No PostHog key configured (or init/capture failed): preserve the
+  // original, harmless console.debug behavior rather than losing
+  // visibility entirely during local development or misconfiguration.
   console.debug("[fouch:analytics]", event, properties ?? {});
 }
