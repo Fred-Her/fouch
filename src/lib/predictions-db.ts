@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { generatePublicId } from "@/lib/public-id";
 import { getEventBySlug } from "@/lib/events";
 import { getParticipantsForEvent, type ParticipantDataStatus } from "@/lib/participants";
+import { classifyInsertConflict } from "@/lib/insert-conflict";
 import type { FouchEvent } from "@/types/event";
 import type { Participant } from "@/types/participant";
 import type { EligiblePrediction } from "@/lib/community-comparison";
@@ -28,6 +29,11 @@ interface InsertPredictionParams {
   countryCode: string | null;
   dataStatus: ParticipantDataStatus;
   deviceToken: string;
+  /** Beta Hardening 0.2 Phase C — set only by the new verified-lock
+   * path. Undefined/omitted preserves the exact pre-Phase-C anonymous
+   * insert behavior (legacy predictions are never retroactively
+   * touched — see FOUCH_IDENTITY_ARCHITECTURE.md). */
+  authUserId?: string;
 }
 
 export type InsertPredictionResult =
@@ -57,23 +63,38 @@ export async function insertPrediction(
         country_code: params.countryCode,
         data_status: params.dataStatus,
         device_token: params.deviceToken,
+        ...(params.authUserId ? { auth_user_id: params.authUserId } : {}),
       })
       .select("id, public_id")
       .single();
 
     if (insertError) {
       // A public_id collision is astronomically unlikely (46 bits of
-      // entropy) but retrying costs nothing. A (event_slug,
-      // device_token) collision means this device already has a
-      // prediction for this event — treat that as success and hand
-      // back the existing one, so a double-tap or retry never looks
-      // like a hard failure.
+      // entropy) but retrying costs nothing. A conflict on the
+      // identity index (Phase C) or the legacy device index both mean
+      // "this identity/device already has a prediction for this
+      // event" — treat either as success and hand back the existing
+      // one, so a double-tap, a race, or a retry never looks like a
+      // hard failure. See insert-conflict.ts for why the message is
+      // classified rather than just checked for "public_id" — Phase C
+      // adds a second possible unique constraint to distinguish.
       if (insertError.code === UNIQUE_VIOLATION) {
-        if (insertError.message.includes("public_id")) continue;
+        const conflict = classifyInsertConflict(insertError.message);
 
-        const existing = await getPredictionByDeviceToken(params.eventSlug, params.deviceToken);
-        if (existing) {
-          return { success: true, publicId: existing.publicId, alreadyExisted: true };
+        if (conflict === "public_id") continue;
+
+        if (conflict === "identity" && params.authUserId) {
+          const existing = await getPredictionByAuthUserId(params.eventSlug, params.authUserId);
+          if (existing) {
+            return { success: true, publicId: existing.publicId, alreadyExisted: true };
+          }
+        }
+
+        if (conflict === "device" || conflict === "unknown") {
+          const existing = await getPredictionByDeviceToken(params.eventSlug, params.deviceToken);
+          if (existing) {
+            return { success: true, publicId: existing.publicId, alreadyExisted: true };
+          }
         }
       }
       return { success: false, error: "We couldn't save your prediction. Please try again." };
@@ -150,6 +171,58 @@ export async function getPredictionByDeviceToken(
   if (error || !prediction) return null;
 
   return getPredictionByPublicId(prediction.public_id);
+}
+
+/**
+ * Beta Hardening 0.2 Phase C — looks up an existing FINAL prediction
+ * by verified identity, the same shape as getPredictionByDeviceToken
+ * above, used for the identity unique-constraint conflict path.
+ */
+export async function getPredictionByAuthUserId(
+  eventSlug: string,
+  authUserId: string,
+): Promise<PredictionRecord | null> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return null;
+
+  const { data: prediction, error } = await supabase
+    .from("predictions")
+    .select("public_id")
+    .eq("event_slug", eventSlug)
+    .eq("auth_user_id", authUserId)
+    .eq("is_final", true)
+    .maybeSingle();
+
+  if (error || !prediction) return null;
+
+  return getPredictionByPublicId(prediction.public_id);
+}
+
+/**
+ * Beta Hardening 0.2 Phase C — feeds the soft, non-blocking
+ * same-device/different-identity signal (see insert-conflict.ts's
+ * isDeviceIdentityMismatch). Returns only the two fields that
+ * function needs — never a full PredictionRecord, since this is
+ * purely an internal analytics signal, not a user-facing lookup.
+ */
+export async function getDeviceTokenIdentity(
+  eventSlug: string,
+  deviceToken: string,
+): Promise<{ deviceToken: string; authUserId: string | null } | null> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("predictions")
+    .select("device_token, auth_user_id")
+    .eq("event_slug", eventSlug)
+    .eq("device_token", deviceToken)
+    .eq("is_final", true)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return { deviceToken: data.device_token, authUserId: data.auth_user_id };
 }
 
 /**

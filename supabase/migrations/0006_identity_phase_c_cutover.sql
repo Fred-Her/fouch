@@ -1,0 +1,34 @@
+﻿-- Beta Hardening 0.2 — Phase C cutover migration.
+--
+-- ============================================================
+-- DO NOT RUN THIS AGAINST PRODUCTION YET.
+-- This file is prepared for Gate 2 (founder-approved cutover) only.
+-- It must be applied in the SAME controlled release as the new
+-- verified-lock application code — never before (removes duplicate
+-- protection with nothing yet live to replace it) and never
+-- meaningfully after (a verified Person B sharing a device with a
+-- verified Person A would still be incorrectly blocked by this old
+-- constraint, even though the new code never relies on it). See
+-- FOUCH_DATABASE_MIGRATION_PLAN.md's "Sequencing" and
+-- FOUCH_BETA_HARDENING_02_PHASE_C.md's cutover procedure.
+-- ============================================================
+--
+-- Purpose: drop the old (event_slug, device_token) unique index. Once
+-- this runs, device_token is purely the soft, non-blocking signal
+-- described in FOUCH_IDENTITY_ARCHITECTURE.md — the hard duplicate
+-- rule becomes exclusively predictions_one_final_per_identity
+-- (already live since Phase A).
+--
+-- This migration does NOT:
+--   - drop the device_token column (kept, as a descriptive field)
+--   - alter auth_user_id or its index
+--   - modify any existing row
+--   - touch predictions_public, event_results, or prediction_items
+
+drop index if exists predictions_event_device_unique;
+
+-- Rollback (only if needed — see FOUCH_BETA_HARDENING_02_PHASE_C.md's
+-- rollback plan): restores the exact original constraint.
+--
+-- create unique index if not exists predictions_event_device_unique
+--   on predictions (event_slug, device_token);

@@ -9,10 +9,30 @@ import { track } from "@/lib/analytics";
 import { captureUtmSource } from "@/lib/attribution";
 import { loadPrediction, clearPrediction } from "@/lib/prediction-storage";
 import { getDeviceToken } from "@/lib/device-token";
-import { checkExistingSubmission, submitPrediction } from "@/app/predict/[slug]/actions";
+import { checkExistingSubmission } from "@/app/predict/[slug]/actions";
+import {
+  startEmailVerification,
+  verifyEmailAndLockPrediction,
+  retryLockWithVerifiedSession,
+  type VerifyAndLockResult,
+} from "@/app/predict/[slug]/verify-actions";
 import type { Participant } from "@/types/participant";
 import { SubmitPanel } from "./SubmitPanel";
+import { EmailStep } from "./EmailStep";
+import { OtpStep } from "./OtpStep";
 
+type Step = "review" | "email" | "otp";
+
+/**
+ * Beta Hardening 0.2 Phase C — GATE 1 implementation. This component
+ * now runs the full email-OTP verified-lock flow client-side. It is
+ * fully wired and tested, but production still has the old
+ * `predictions_event_device_unique` constraint active — deploying
+ * this to production before that constraint is dropped (Gate 2,
+ * founder-approved cutover) would risk incorrectly blocking two
+ * different verified people sharing a device. See
+ * FOUCH_BETA_HARDENING_02_PHASE_C.md before deploying.
+ */
 export function ReviewContent({
   eventSlug,
   participants,
@@ -25,8 +45,21 @@ export function ReviewContent({
   const router = useRouter();
   const [rankedIds, setRankedIds] = useState<string[] | null>(null);
   const [checkingExisting, setCheckingExisting] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [step, setStep] = useState<Step>("review");
+  const [pendingNickname, setPendingNickname] = useState("");
+  const [pendingCountryCode, setPendingCountryCode] = useState("");
+
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+
+  const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
+  /** Present only after OTP verification succeeded but the lock
+   * insert failed transiently — enables a no-new-OTP retry. */
+  const [accessTokenForRetry, setAccessTokenForRetry] = useState<string | null>(null);
 
   useEffect(() => {
     const validIds = new Set(participants.map((participant) => participant.id));
@@ -60,46 +93,121 @@ export function ReviewContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rankedIds]);
 
-  async function handleSubmit(nickname: string, countryCode: string) {
-    // Guard against a rapid double-click firing two submissions before
-    // React re-renders the disabled button.
-    if (submitting) return;
+  function handleProceedToEmail(nickname: string, countryCode: string) {
+    setPendingNickname(nickname);
+    setPendingCountryCode(countryCode);
+    setStep("email");
+  }
 
-    setSubmitting(true);
-    setErrorMessage(null);
-    const utmSource = captureUtmSource();
-    track("prediction_submit_started", { event_slug: eventSlug });
+  async function handleSendCode(targetEmail: string) {
+    if (emailSubmitting) return;
+    setEmailSubmitting(true);
+    setEmailError(null);
+    track("verification_started", { event_slug: eventSlug });
 
     let result;
     try {
-      const deviceToken = getDeviceToken();
-      result = await submitPrediction({
-        eventSlug,
-        participantIds: rankedIds ?? [],
-        nickname: nickname.trim() || undefined,
-        countryCode: countryCode || undefined,
-        deviceToken,
-      });
+      result = await startEmailVerification(targetEmail);
     } catch {
-      // Network/server failure reaching the Server Action itself (not a
-      // validation rejection — those return {success:false} normally,
-      // handled below). The local Top 10 draft is untouched either way
-      // (clearPrediction only runs on confirmed success, further down).
-      setErrorMessage("We couldn't lock your prediction. Your Top 10 is still saved — try again.");
-      setSubmitting(false);
+      setEmailError("We couldn't send a code — try again in a moment.");
+      setEmailSubmitting(false);
       return;
     }
+
+    setEmailSubmitting(false);
 
     if (!result.success) {
-      setErrorMessage(result.error);
-      setSubmitting(false);
+      setEmailError(result.error);
       return;
     }
 
-    // Fires only after confirmed success — never on a caught failure above.
-    track("prediction_submitted", { event_slug: eventSlug, ...(utmSource ? { utm_source: utmSource } : {}) });
-    clearPrediction(eventSlug);
-    router.push(`/p/${result.publicId}?new=1`);
+    track("verification_sent", { event_slug: eventSlug });
+    setEmail(targetEmail);
+    setOtpError(null);
+    setWrongAttemptCount(0);
+    setAccessTokenForRetry(null);
+    setStep("otp");
+  }
+
+  function handleLockResult(result: VerifyAndLockResult) {
+    if (result.success) {
+      track("verification_completed", { event_slug: eventSlug });
+      if (result.duplicateDeviceSignal) {
+        track("duplicate_prediction_attempt", { event_slug: eventSlug });
+      }
+      const utmSource = captureUtmSource();
+      track("prediction_submitted", {
+        event_slug: eventSlug,
+        ...(utmSource ? { utm_source: utmSource } : {}),
+      });
+      clearPrediction(eventSlug);
+      router.push(`/p/${result.publicId}?new=1`);
+      return;
+    }
+
+    track("verification_failed", { event_slug: eventSlug, failure_reason: result.failureReason });
+    setOtpError(result.error);
+    setAccessTokenForRetry(result.accessToken ?? null);
+    if (result.failureReason === "invalid_code") {
+      setWrongAttemptCount((count) => count + 1);
+    }
+  }
+
+  async function handleVerify(code: string) {
+    if (otpSubmitting) return;
+    setOtpSubmitting(true);
+    setOtpError(null);
+
+    let result: VerifyAndLockResult;
+    try {
+      result = await verifyEmailAndLockPrediction(email, code, {
+        eventSlug,
+        participantIds: rankedIds ?? [],
+        nickname: pendingNickname.trim() || undefined,
+        countryCode: pendingCountryCode || undefined,
+        deviceToken: getDeviceToken(),
+      });
+    } catch {
+      setOtpSubmitting(false);
+      setOtpError("We couldn't verify your code — try again.");
+      return;
+    }
+
+    setOtpSubmitting(false);
+    handleLockResult(result);
+  }
+
+  async function handleRetryLock() {
+    if (otpSubmitting || !accessTokenForRetry) return;
+    setOtpSubmitting(true);
+    setOtpError(null);
+
+    let result: VerifyAndLockResult;
+    try {
+      result = await retryLockWithVerifiedSession(accessTokenForRetry, {
+        eventSlug,
+        participantIds: rankedIds ?? [],
+        nickname: pendingNickname.trim() || undefined,
+        countryCode: pendingCountryCode || undefined,
+        deviceToken: getDeviceToken(),
+      });
+    } catch {
+      setOtpSubmitting(false);
+      setOtpError("We couldn't lock your prediction. Your Top 10 is still saved — try again.");
+      return;
+    }
+
+    setOtpSubmitting(false);
+    handleLockResult(result);
+  }
+
+  function handleUseDifferentEmail() {
+    setStep("email");
+    setEmail("");
+    setOtpError(null);
+    setEmailError(null);
+    setWrongAttemptCount(0);
+    setAccessTokenForRetry(null);
   }
 
   // Avoid a flash of the form before we know whether this device
@@ -139,20 +247,56 @@ export function ReviewContent({
         ))}
       </ol>
 
-      <Link
-        href={`/predict/${eventSlug}`}
-        className="mt-6 inline-flex items-center gap-2 rounded border border-border-strong px-6 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
-      >
-        <Pencil className="h-4 w-4" aria-hidden />
-        Edit my Top {requiredCount}
-      </Link>
+      {step === "review" ? (
+        <Link
+          href={`/predict/${eventSlug}`}
+          className="mt-6 inline-flex items-center gap-2 rounded border border-border-strong px-6 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
+        >
+          <Pencil className="h-4 w-4" aria-hidden />
+          Edit my Top {requiredCount}
+        </Link>
+      ) : null}
 
-      <SubmitPanel
-        requiredCount={requiredCount}
-        submitting={submitting}
-        errorMessage={errorMessage}
-        onSubmit={handleSubmit}
-      />
+      {step === "review" ? (
+        <SubmitPanel
+          requiredCount={requiredCount}
+          submitting={false}
+          errorMessage={null}
+          onSubmit={handleProceedToEmail}
+        />
+      ) : null}
+
+      {step === "email" ? (
+        <EmailStep submitting={emailSubmitting} errorMessage={emailError} onSendCode={handleSendCode} />
+      ) : null}
+
+      {step === "otp" && accessTokenForRetry ? (
+        <div className="mt-8 border-t border-border pt-6">
+          {otpError ? (
+            <p className="text-sm text-accent-strong" role="alert" aria-live="polite">
+              {otpError}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            disabled={otpSubmitting}
+            onClick={handleRetryLock}
+            className="mt-4 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          >
+            {otpSubmitting ? "Trying again…" : "Try again"}
+          </button>
+        </div>
+      ) : step === "otp" ? (
+        <OtpStep
+          email={email}
+          submitting={otpSubmitting}
+          errorMessage={otpError}
+          wrongAttemptCount={wrongAttemptCount}
+          onVerify={handleVerify}
+          onResend={() => handleSendCode(email)}
+          onUseDifferentEmail={handleUseDifferentEmail}
+        />
+      ) : null}
     </div>
   );
 }

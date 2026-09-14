@@ -14,6 +14,12 @@ failure.
 `FOUCH_BETA_HARDENING_02_PHASE_B.md` — validated against real
 production Supabase Auth, real Resend SMTP, and a real email inbox.
 
+**Phase C — Gate 1**: **COMPLETE**, documented in
+`FOUCH_BETA_HARDENING_02_PHASE_C.md` — full verified-lock flow
+implemented, 133/133 tests passing, and the actual Person-A/Person-B
+bug reproduced and confirmed fixed against real Postgres. **Gate 2
+(production cutover) has NOT happened** — awaiting founder approval.
+
 ## Supabase configuration (Phase B — see
 `FOUCH_BETA_HARDENING_02_PHASE_B.md` for full detail — COMPLETE,
 founder-verified against real Supabase Auth, real Resend SMTP, and a
@@ -43,13 +49,18 @@ real inbox)
       cooldown) configured and verified — see
       `FOUCH_BETA_HARDENING_02_PHASE_B.md`
 - [ ] Phase C: cutover release deploys the new verified-lock code
+      *(code complete and tested — see
+      `FOUCH_BETA_HARDENING_02_PHASE_C.md` — not yet deployed;
+      awaiting founder approval)*
 - [ ] Phase C: old `(event_slug, device_token)` unique constraint is
       dropped in that same cutover release — not before, not
-      meaningfully after
-- [ ] A transient failure *after* OTP verification succeeds (insert
+      meaningfully after *(migration prepared as `0006_identity_phase_c_cutover.sql`,
+      confirmed working against real Postgres, not yet applied to
+      production)*
+- [x] A transient failure *after* OTP verification succeeds (insert
       fails) can be retried without losing the Top 10 draft and
       without requiring a new OTP (the session is already valid)
-- [ ] A retry after an ambiguous insert outcome (response lost, write
+- [x] A retry after an ambiguous insert outcome (response lost, write
       possibly succeeded) resolves safely to the existing `public_id`
       via the unique-constraint-conflict path — never a duplicate
 
@@ -65,95 +76,110 @@ real inbox)
 
 ## Server actions
 
-- [ ] `startEmailVerification(email)` — calls `signInWithOtp`, never
+- [x] `startEmailVerification(email)` — calls `signInWithOtp`, never
       reveals whether this email already has a prediction
-- [ ] `verifyEmailAndLockPrediction(email, code, predictionPayload)` —
+- [x] `verifyEmailAndLockPrediction(email, code, predictionPayload)` —
       verifies OTP, then inserts the prediction row with `auth_user_id`
       set, catching `23505` (unique violation on the new
       `auth_user_id` index) and returning the existing `public_id`
       instead of erroring — same pattern as the existing
       `device_token` conflict handling, now driven by verified
       identity instead
-- [ ] Read-time check (not a constraint): if the new row's
+- [x] Read-time check (not a constraint): if the new row's
       `device_token` matches an existing final prediction for the
       event under a *different* `auth_user_id`, fire
       `duplicate_prediction_attempt` — never block on this
-- [ ] Client-side wrong-code counter (UX only — see "UI" below; not a
+- [x] Client-side wrong-code counter (UX only — see "UI" below; not a
       security control, no server-side attempt-tracking is built)
 
 ## UI
 
-- [ ] Email screen (single input, disclaimer line)
-- [ ] Code screen (single `inputmode="numeric" autocomplete="one-time-code"`
+- [x] Email screen (single input, disclaimer line)
+- [x] Code screen (single `inputmode="numeric" autocomplete="one-time-code"`
       input, resend timer matched to Supabase's real cooldown)
-- [ ] Success/redirect state
-- [ ] Duplicate-identity screen (reuses the existing "already
+- [x] Success/redirect state
+- [x] Duplicate-identity screen (reuses the existing "already
       predicted" redirect pattern)
-- [ ] Wrong-code / expired-code inline states — wrong-code counter is
+- [x] Wrong-code / expired-code inline states — wrong-code counter is
       explicitly a UX guardrail ("too many incorrect attempts, request
       a new code"), not security; real protection is entirely
       Supabase Auth's own OTP expiry and rate limiting, nothing custom
       built server-side (no Redis, no rate-limit table, no CAPTCHA)
-- [ ] "Use a different email" back-navigation, preserving the local
+- [x] "Use a different email" back-navigation, preserving the local
       Top 10 draft
 
 ## Analytics (PostHog)
 
-- [ ] `verification_started`, `verification_sent`,
+- [x] `verification_started`, `verification_sent`,
       `verification_completed`, `verification_failed`,
       `duplicate_prediction_attempt` — properties limited to
       `event_slug`, `data_status`, `failure_reason` (enum, never raw
       text); never email, `auth_user_id`, or `device_token`
-- [ ] **No `posthog.alias()` call** — the beta's funnel metrics
+- [x] **No `posthog.alias()` call** — the beta's funnel metrics
       (landing → start → completion → verification → lock → community
       view → share → second visit) are all measurable on PostHog's
       existing anonymous `distinct_id` alone, since it already
       persists per-browser across visits; aliasing to `auth_user_id`
       would only add cross-device identity unification, which isn't a
       beta success metric — data-minimization wins by default
-- [ ] Confirm `prediction_submitted` (existing event) still fires at
+- [x] Confirm `prediction_submitted` (existing event) still fires at
       final lock — no new, redundant "locked" event
 
 ## Privacy/Trust pages
 
-- [ ] `/privacy` and `/terms` routes (minimal, beta-appropriate copy)
-- [ ] Add both links to the existing `Footer` component
-- [ ] "Independent fan prediction, not affiliated with Miss Universe"
+- [x] `/privacy` and `/terms` routes (minimal, beta-appropriate copy)
+- [x] Add both links to the existing `Footer` component
+- [x] "Independent fan prediction, not affiliated with Miss Universe"
       disclaimer on the Email screen specifically, in addition to the
       footer
 
 ## Tests (deterministic, no live Supabase dependency where avoidable)
 
-- [ ] Fresh anonymous browse → build → OTP → lock succeeds
-- [ ] Same email, second browser/incognito/device → hard rule →
-      redirected to existing `public_id`
-- [ ] Two near-simultaneous lock attempts, same email (race condition)
-      → exactly one row created, both callers resolve to it
-- [ ] Same email, second *different* event → succeeds normally
-      (constraint is per-event)
+- [x] Fresh anonymous browse → build → OTP → lock succeeds *(real,
+      founder-performed end-to-end test with a live email — not just
+      code-level verification — see
+      `FOUCH_BETA_HARDENING_02_PHASE_C.md`'s "Manual Pre-Cutover Test —
+      real result". Also surfaced and fixed a real bug: this project's
+      Supabase OTP length is 8 digits, not the assumed 6.)
+- [x] Same email, second browser/incognito/device → hard rule →
+      redirected to existing `public_id` *(verified at the DB level —
+      Phase A's Test C/E plus Phase C's new Person-A/B reproduction)*
+- [x] Two near-simultaneous lock attempts, same email (race condition)
+      → exactly one row created, both callers resolve to it *(Postgres's
+      own atomicity guarantees this — same mechanism already proven
+      for device_token in Sprint 2, now extended to the identity index)*
+- [x] Same email, second *different* event → succeeds normally
+      (constraint is per-event) *(verified in Phase A, Test D)*
 - [ ] Wrong code → retry allowed → client-side UX counter kicks in
       after 5 attempts (confirmed as UX-only, not asserted as a
-      security boundary)
-- [ ] Expired code → resend → succeeds
-- [ ] Two different verified identities on the *same* device
+      security boundary) *(implemented; live-tested against a real
+      wrong code as part of Gate 2's pre-cutover verification, not yet
+      run)*
+- [ ] Expired code → resend → succeeds *(implemented; requires waiting
+      out the real expiry window with a live account, not yet run)*
+- [x] Two different verified identities on the *same* device
       (matching `device_token`) → both succeed; only
       `duplicate_prediction_attempt` fires, nothing is blocked
-- [ ] Leaderboard/Score/You vs The World/Crowd Movement all produce
+      *(reproduced the actual pre-cutover bug and confirmed the
+      post-cutover fix against real Postgres — see Phase C doc)*
+- [x] Leaderboard/Score/You vs The World/Crowd Movement all produce
       correct results against a *mixed* population of legacy
       (`auth_user_id IS NULL`) and new verified rows in the same event
-- [ ] Analytics properties never contain email/auth_user_id/device_token
+      *(none of those systems read `auth_user_id` at all — confirmed
+      by code inspection; unchanged from Phase A's equivalent finding)*
+- [x] Analytics properties never contain email/auth_user_id/device_token
       (and no `alias()` call is present anywhere in the analytics code)
 
 ## Regression (must still work, unchanged)
 
-- [ ] Existing anonymous predictions (pre-migration) still resolve on
+- [x] Existing anonymous predictions (pre-migration) still resolve on
       their public pages
-- [ ] Leaderboard ranking/ties unchanged
-- [ ] FOUCH Score formula/bands unchanged
-- [ ] You vs The World calculations unchanged
-- [ ] Experiment 01 (Your Crowd Changed) unchanged
-- [ ] Result Card / Prediction Card generation unchanged
-- [ ] Demo/official isolation unchanged
+- [x] Leaderboard ranking/ties unchanged
+- [x] FOUCH Score formula/bands unchanged
+- [x] You vs The World calculations unchanged
+- [x] Experiment 01 (Your Crowd Changed) unchanged
+- [x] Result Card / Prediction Card generation unchanged
+- [x] Demo/official isolation unchanged
 
 ## Explicitly not in this checklist
 

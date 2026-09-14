@@ -96,7 +96,12 @@ export type FouchAnalyticsEvent =
   | "leaderboard_row_clicked"
   | "own_rank_viewed"
   | "leaderboard_from_score_clicked"
-  | "consensus_change_viewed";
+  | "consensus_change_viewed"
+  | "verification_started"
+  | "verification_sent"
+  | "verification_completed"
+  | "verification_failed"
+  | "duplicate_prediction_attempt";
 
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
