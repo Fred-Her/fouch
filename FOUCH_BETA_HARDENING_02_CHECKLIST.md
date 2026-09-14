@@ -14,11 +14,11 @@ failure.
 `FOUCH_BETA_HARDENING_02_PHASE_B.md` — validated against real
 production Supabase Auth, real Resend SMTP, and a real email inbox.
 
-**Phase C — Gate 1**: **COMPLETE**, documented in
-`FOUCH_BETA_HARDENING_02_PHASE_C.md` — full verified-lock flow
-implemented, 133/133 tests passing, and the actual Person-A/Person-B
-bug reproduced and confirmed fixed against real Postgres. **Gate 2
-(production cutover) has NOT happened** — awaiting founder approval.
+**Phase C — Gate 1 & Gate 2**: **COMPLETE**, documented in
+`FOUCH_BETA_HARDENING_02_PHASE_C.md` — the verified-lock flow is now
+live in production, confirmed with a real end-to-end test, and the old
+`device_token` uniqueness constraint has been dropped. Legacy
+anonymous predictions confirmed still working post-cutover.
 
 ## Supabase configuration (Phase B — see
 `FOUCH_BETA_HARDENING_02_PHASE_B.md` for full detail — COMPLETE,
@@ -43,20 +43,19 @@ real inbox)
       the current anonymous submission path still depends on it.
       *(Migration file created and verified against a real local
       Postgres instance running the project's actual migrations — see
-      `FOUCH_BETA_HARDENING_02_PHASE_A.md`. Not yet applied to the
-      founder's production Supabase project; that's a manual step.)*
+      `FOUCH_BETA_HARDENING_02_PHASE_A.md`. Applied to the founder's
+      production Supabase project.)*
 - [x] Phase B: Supabase Auth (OTP template, SMTP, expiry, resend
       cooldown) configured and verified — see
       `FOUCH_BETA_HARDENING_02_PHASE_B.md`
-- [ ] Phase C: cutover release deploys the new verified-lock code
-      *(code complete and tested — see
-      `FOUCH_BETA_HARDENING_02_PHASE_C.md` — not yet deployed;
-      awaiting founder approval)*
-- [ ] Phase C: old `(event_slug, device_token)` unique constraint is
+- [x] Phase C: cutover release deploys the new verified-lock code
+      *(deployed to production and confirmed working with a real
+      email end-to-end — see `FOUCH_BETA_HARDENING_02_PHASE_C.md`'s
+      Gate 2 results)*
+- [x] Phase C: old `(event_slug, device_token)` unique constraint is
       dropped in that same cutover release — not before, not
-      meaningfully after *(migration prepared as `0006_identity_phase_c_cutover.sql`,
-      confirmed working against real Postgres, not yet applied to
-      production)*
+      meaningfully after *(applied to production; confirmed only
+      `predictions_one_final_per_identity` remains)*
 - [x] A transient failure *after* OTP verification succeeds (insert
       fails) can be retried without losing the Top 10 draft and
       without requiring a new OTP (the session is already valid)
