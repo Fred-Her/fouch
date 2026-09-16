@@ -1,4 +1,4 @@
-﻿/**
+﻿﻿/**
  * Analytics seam — Beta Hardening 0.1.
  *
  * Every call site still imports the same `track(event, properties)`
@@ -79,6 +79,9 @@ export type FouchAnalyticsEvent =
   | "image_downloaded"
   | "public_prediction_viewed"
   | "public_prediction_cta_clicked"
+  | "prediction_edit_started"
+  | "prediction_edit_reordered"
+  | "prediction_updated"
   | "you_vs_world_viewed"
   | "same_winner_viewed"
   | "top3_match_viewed"

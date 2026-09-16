@@ -1,6 +1,7 @@
-﻿"use server";
+﻿﻿"use server";
 
 import { getEventBySlug } from "@/lib/events";
+import { getEventLockConfig } from "@/lib/events-db";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { validateSubmission } from "@/lib/prediction-validation";
 import { insertPrediction, getPredictionByDeviceToken } from "@/lib/predictions-db";
@@ -32,6 +33,11 @@ export async function submitPrediction(
 
   const requiredCount = Math.min(10, participantData.participants.length);
 
+  // FOUCH 0.3A: lock/open timing comes from Supabase (single
+  // authoritative source), fetched fresh on every submission attempt
+  // — never cached, never trusted from the client.
+  const lockConfig = await getEventLockConfig(input.eventSlug);
+
   const validation = validateSubmission(
     {
       participantIds: input.participantIds,
@@ -41,6 +47,7 @@ export async function submitPrediction(
     event,
     participantData.participants,
     requiredCount,
+    lockConfig,
   );
 
   if (!validation.valid) {

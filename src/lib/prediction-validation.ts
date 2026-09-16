@@ -1,5 +1,12 @@
-﻿import type { Participant } from "@/types/participant";
+﻿﻿import type { Participant } from "@/types/participant";
 import type { FouchEvent } from "@/types/event";
+// Type-only import — erased at build time, so this file stays a pure,
+// DB-free module. The shape it validates against (EventLockConfig)
+// lives in prediction-lock-logic.ts, which itself has no "server-only"
+// import specifically so both it and this file can be unit tested
+// directly. See that file's comment for why database time, never
+// client time, is what ultimately feeds `now` here.
+import type { EventLockConfig } from "@/lib/prediction-lock-logic";
 
 export interface SubmissionInput {
   participantIds: string[];
@@ -35,19 +42,29 @@ function sanitizeNickname(raw: string | undefined): string | null {
  * only from the server action — the browser's ranking, nickname, and
  * country are never trusted as-is. Every rule here maps directly to
  * Sprint 2's brief section 10.
+ *
+ * FOUCH 0.3A: open/lock timing is no longer read from `event`
+ * (src/lib/events.ts no longer carries these fields at all) — it is
+ * passed in explicitly as `lockConfig`, fetched by the caller from
+ * Supabase `events` (the single authoritative source, see
+ * events-db.ts). `now` is also passed in rather than read here via
+ * Date.now(), so this function stays a pure, fully unit-testable
+ * function with no implicit clock or DB dependency — the server
+ * action is what supplies real server time, never anything the
+ * client could influence.
  */
 export function validateSubmission(
   input: SubmissionInput,
   event: FouchEvent,
   activeParticipants: Participant[],
   requiredCount: number,
+  lockConfig: EventLockConfig | null,
+  now: number = Date.now(),
 ): ValidationResult {
-  const now = Date.now();
-
-  if (event.predictionOpenAt && now < Date.parse(event.predictionOpenAt)) {
+  if (lockConfig?.predictionOpenAt && now < Date.parse(lockConfig.predictionOpenAt)) {
     return { valid: false, error: "Predictions for this event haven't opened yet." };
   }
-  if (event.predictionLockAt && now >= Date.parse(event.predictionLockAt)) {
+  if (lockConfig?.predictionLockAt && now >= Date.parse(lockConfig.predictionLockAt)) {
     return { valid: false, error: "Predictions for this event are locked." };
   }
 

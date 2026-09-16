@@ -1,9 +1,10 @@
-﻿import type { Metadata } from "next";
+﻿﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CountryFlag } from "@/components/CountryFlag";
 import { siteUrl } from "@/lib/site";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
+import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { getOfficialResult } from "@/lib/results-db";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
 import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
@@ -67,6 +68,14 @@ export default async function PublicPredictionPage({
   const official = await getOfficialResult(event.slug, prediction.dataStatus);
   const hasResult = Boolean(official);
 
+  // FOUCH 0.3A: editing is offered only for a verified prediction
+  // while the event is still open — fetched fresh on every page view
+  // from the single authoritative source, never cached/assumed.
+  const lockConfig = await getEventLockConfig(event.slug);
+  const isPredictionOpen = isPredictionWindowOpen(lockConfig, Date.now());
+  const canEdit = prediction.hasVerifiedOwner && isPredictionOpen;
+  const showLockedNotice = prediction.hasVerifiedOwner && !isPredictionOpen;
+
   return (
     <main className="mx-auto max-w-content px-6 py-8">
       <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
@@ -93,6 +102,9 @@ export default async function PublicPredictionPage({
         publicId={publicId}
         rankedParticipants={rankedParticipants}
         hasResult={hasResult}
+        canEdit={canEdit}
+        showLockedNotice={showLockedNotice}
+        predictionLockAt={lockConfig?.predictionLockAt ?? null}
         fouchScore={<FouchScore prediction={prediction} event={event} publicId={publicId} />}
         youVsTheWorld={<YouVsTheWorld prediction={prediction} event={event} />}
         yourCrowdChanged={<YourCrowdChanged prediction={prediction} event={event} />}

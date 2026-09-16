@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import { useState } from "react";
 import { PREDICTOR_COUNTRIES } from "@/lib/countries";
@@ -50,8 +50,8 @@ export function SubmitPanel({
       </div>
 
       <p className="mt-2 text-xs text-text-muted">
-        Optional — shown publicly with your prediction. You can edit your ranking until you lock
-        it in.
+        Optional — shown publicly with your prediction. You can update your picks until predictions
+        close.
       </p>
 
       {errorMessage ? (
@@ -66,7 +66,7 @@ export function SubmitPanel({
         onClick={() => onSubmit(nickname, countryCode)}
         className="mt-4 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {submitting ? "Locking in…" : `Lock in my Top ${requiredCount}`}
+        {submitting ? "Saving…" : `Save my Top ${requiredCount}`}
       </button>
     </div>
   );

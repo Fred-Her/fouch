@@ -1,9 +1,10 @@
-﻿import "server-only";
+﻿﻿import "server-only";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { generatePublicId } from "@/lib/public-id";
 import { getEventBySlug } from "@/lib/events";
 import { getParticipantsForEvent, type ParticipantDataStatus } from "@/lib/participants";
 import { classifyInsertConflict } from "@/lib/insert-conflict";
+import { isRankingUnchanged } from "@/lib/prediction-version-logic";
 import type { FouchEvent } from "@/types/event";
 import type { Participant } from "@/types/participant";
 import type { EligiblePrediction } from "@/lib/community-comparison";
@@ -18,6 +19,14 @@ export interface PredictionRecord {
   countryCode: string | null;
   dataStatus: ParticipantDataStatus;
   submittedAt: string;
+  /** FOUCH 0.3A: whether this prediction has a verified owner. Only
+   * ever used server-side to decide whether to offer "EDIT MY TOP
+   * 10" — never exposed as a raw auth_user_id to the client (see
+   * predictions_public, which still never selects auth_user_id). */
+  hasVerifiedOwner: boolean;
+  /** FOUCH 0.3A: version_number of the current version — needed by
+   * the edit flow as the optimistic-concurrency baseline. */
+  currentVersionNumber: number;
   /** Participant IDs in ranked order — index 0 is position #1. */
   rankedParticipantIds: string[];
 }
@@ -100,8 +109,24 @@ export async function insertPrediction(
       return { success: false, error: "We couldn't save your prediction. Please try again." };
     }
 
+    // FOUCH 0.3A: every prediction, including a first-time submission,
+    // is now version 1 of its versioned history — not a special case.
+    // See createPredictionVersion() below for the same shape used by
+    // every later edit.
+    const { data: version, error: versionError } = await supabase
+      .from("prediction_versions")
+      .insert({ prediction_id: prediction.id, version_number: 1 })
+      .select("id")
+      .single();
+
+    if (versionError || !version) {
+      await supabase.from("predictions").delete().eq("id", prediction.id);
+      return { success: false, error: "We couldn't save your prediction. Please try again." };
+    }
+
     const items = params.participantIds.map((participantId, index) => ({
       prediction_id: prediction.id,
+      version_id: version.id,
       participant_id: participantId,
       predicted_position: index + 1,
     }));
@@ -111,7 +136,20 @@ export async function insertPrediction(
     if (itemsError) {
       // Compensating cleanup — Supabase's JS client has no
       // multi-statement transaction here, so we manually undo the
-      // parent row rather than leave an incomplete prediction behind.
+      // parent rows rather than leave an incomplete prediction behind.
+      // Deleting `predictions` cascades to `prediction_versions`
+      // (on delete cascade), which in turn cascades to any
+      // `prediction_items` already inserted for it.
+      await supabase.from("predictions").delete().eq("id", prediction.id);
+      return { success: false, error: "We couldn't save your prediction. Please try again." };
+    }
+
+    const { error: currentVersionError } = await supabase
+      .from("predictions")
+      .update({ current_version_id: version.id })
+      .eq("id", prediction.id);
+
+    if (currentVersionError) {
       await supabase.from("predictions").delete().eq("id", prediction.id);
       return { success: false, error: "We couldn't save your prediction. Please try again." };
     }
@@ -122,22 +160,227 @@ export async function insertPrediction(
   return { success: false, error: "We couldn't generate a unique link. Please try again." };
 }
 
+export interface EditablePrediction {
+  publicId: string;
+  eventSlug: string;
+  authUserId: string | null;
+  /** Highest version_number that exists for this prediction — the
+   * next successful edit is version_number = latestVersionNumber + 1. */
+  latestVersionNumber: number;
+  /** Participant IDs of the CURRENT version, in ranked order — used
+   * to pre-fill the edit builder. */
+  currentRankedParticipantIds: string[];
+}
+
+/**
+ * The one lookup the edit flow needs before authorizing anything:
+ * who owns this prediction (by auth_user_id, never anything the
+ * client supplies) and what its current ranking/version number are.
+ * Returns null if the prediction, its current version, or its items
+ * can't be resolved — callers must treat that as "can't edit", never
+ * as "treat as new".
+ */
+export async function getPredictionForEdit(publicId: string): Promise<EditablePrediction | null> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return null;
+
+  const { data: prediction, error } = await supabase
+    .from("predictions")
+    .select("id, public_id, event_slug, auth_user_id, current_version_id")
+    .eq("public_id", publicId)
+    .single();
+
+  if (error || !prediction || !prediction.current_version_id) return null;
+
+  const { data: currentVersion, error: versionError } = await supabase
+    .from("prediction_versions")
+    .select("version_number")
+    .eq("id", prediction.current_version_id)
+    .single();
+
+  if (versionError || !currentVersion) return null;
+
+  const { data: items, error: itemsError } = await supabase
+    .from("prediction_items")
+    .select("participant_id, predicted_position")
+    .eq("version_id", prediction.current_version_id)
+    .order("predicted_position", { ascending: true });
+
+  if (itemsError || !items) return null;
+
+  return {
+    publicId: prediction.public_id,
+    eventSlug: prediction.event_slug,
+    authUserId: prediction.auth_user_id,
+    latestVersionNumber: currentVersion.version_number,
+    currentRankedParticipantIds: items.map((item) => item.participant_id),
+  };
+}
+
+export type CreateVersionResult =
+  | { success: true; publicId: string; versionNumber: number; unchanged: boolean }
+  | { success: false; error: string };
+
+/**
+ * Creates a new immutable version for an EXISTING logical prediction
+ * and makes it current. Never touches public_id, never creates a new
+ * `predictions` row — this is exclusively the "edit" path; first
+ * submissions go through insertPrediction() above.
+ *
+ * Idempotency (brief §19): if the submitted ranking is identical to
+ * the prediction's current version, this is a no-op that returns
+ * success without creating a new version — the simplest robust
+ * defense against a double-click or a network retry re-sending the
+ * exact same edit, with no client-supplied idempotency key needed.
+ * A retry that lands after a lost response looks identical to the
+ * original request, so this naturally covers that case too.
+ *
+ * Concurrency: `expectedVersionNumber` must match the version number
+ * the caller read just before presenting the edit form. A mismatch
+ * means someone else's edit (or this same edit, retried, but no
+ * longer the current version) landed first — reported as a
+ * conflict rather than silently overwritten, satisfying "a retry
+ * must not accidentally create uncontrolled duplicate versions" from
+ * the other direction (never silently stack two edits based on a
+ * stale read either).
+ */
+export async function createPredictionVersion(params: {
+  predictionPublicId: string;
+  participantIds: string[];
+  expectedVersionNumber: number;
+  currentRankedParticipantIds: string[];
+}): Promise<CreateVersionResult> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { success: false, error: "Editing isn't available right now — the database isn't configured." };
+  }
+
+  const isUnchanged = isRankingUnchanged(params.currentRankedParticipantIds, params.participantIds);
+
+  if (isUnchanged) {
+    return {
+      success: true,
+      publicId: params.predictionPublicId,
+      versionNumber: params.expectedVersionNumber,
+      unchanged: true,
+    };
+  }
+
+  const { data: prediction, error: predictionError } = await supabase
+    .from("predictions")
+    .select("id, current_version_id")
+    .eq("public_id", params.predictionPublicId)
+    .single();
+
+  if (predictionError || !prediction) {
+    return { success: false, error: "We couldn't find that prediction." };
+  }
+
+  // Re-check the expected version number against the DB row we just
+  // read, not the one the caller assumed — closes the gap between
+  // "the page loaded the current ranking" and "the save request
+  // actually landed", per the concurrency note above.
+  const { data: currentVersionRow, error: currentVersionRowError } = await supabase
+    .from("prediction_versions")
+    .select("version_number")
+    .eq("id", prediction.current_version_id)
+    .single();
+
+  if (currentVersionRowError || !currentVersionRow) {
+    return { success: false, error: "We couldn't verify your prediction's current version." };
+  }
+
+  if (currentVersionRow.version_number !== params.expectedVersionNumber) {
+    return {
+      success: false,
+      error: "Your prediction changed elsewhere since you opened this — please reload and try again.",
+    };
+  }
+
+  const nextVersionNumber = currentVersionRow.version_number + 1;
+
+  const { data: newVersion, error: versionError } = await supabase
+    .from("prediction_versions")
+    .insert({ prediction_id: prediction.id, version_number: nextVersionNumber })
+    .select("id")
+    .single();
+
+  if (versionError || !newVersion) {
+    // A unique-violation on (prediction_id, version_number) here means
+    // a concurrent edit already claimed this exact next version number
+    // — report as a conflict rather than silently retrying with a
+    // higher number, which could race indefinitely under contention.
+    return {
+      success: false,
+      error: "Your prediction changed elsewhere since you opened this — please reload and try again.",
+    };
+  }
+
+  const items = params.participantIds.map((participantId, index) => ({
+    prediction_id: prediction.id,
+    version_id: newVersion.id,
+    participant_id: participantId,
+    predicted_position: index + 1,
+  }));
+
+  const { error: itemsError } = await supabase.from("prediction_items").insert(items);
+
+  if (itemsError) {
+    // Compensating cleanup, same pattern as insertPrediction(): undo
+    // the orphaned version row rather than leave a version with no
+    // items behind. current_version_id was never pointed at it, so
+    // no reader ever saw this partial state.
+    await supabase.from("prediction_versions").delete().eq("id", newVersion.id);
+    return { success: false, error: "We couldn't save your changes. Please try again." };
+  }
+
+  const { error: updateError } = await supabase
+    .from("predictions")
+    .update({ current_version_id: newVersion.id })
+    .eq("id", prediction.id);
+
+  if (updateError) {
+    await supabase.from("prediction_versions").delete().eq("id", newVersion.id);
+    return { success: false, error: "We couldn't save your changes. Please try again." };
+  }
+
+  return {
+    success: true,
+    publicId: params.predictionPublicId,
+    versionNumber: nextVersionNumber,
+    unchanged: false,
+  };
+}
+
 export async function getPredictionByPublicId(publicId: string): Promise<PredictionRecord | null> {
   const supabase = getSupabaseServerClient();
   if (!supabase) return null;
 
   const { data: prediction, error } = await supabase
     .from("predictions")
-    .select("public_id, event_slug, nickname, country_code, data_status, submitted_at, id")
+    .select(
+      "public_id, event_slug, nickname, country_code, data_status, submitted_at, id, current_version_id, auth_user_id",
+    )
     .eq("public_id", publicId)
     .single();
 
-  if (error || !prediction) return null;
+  if (error || !prediction || !prediction.current_version_id) return null;
 
+  const { data: currentVersion, error: currentVersionError } = await supabase
+    .from("prediction_versions")
+    .select("version_number")
+    .eq("id", prediction.current_version_id)
+    .single();
+
+  if (currentVersionError || !currentVersion) return null;
+
+  // FOUCH 0.3A: always the CURRENT version's items — never every
+  // version ever saved. This is the one place every public-facing
+  // read of "this prediction's ranking" ultimately goes through.
   const { data: items, error: itemsError } = await supabase
     .from("prediction_items")
     .select("participant_id, predicted_position")
-    .eq("prediction_id", prediction.id)
+    .eq("version_id", prediction.current_version_id)
     .order("predicted_position", { ascending: true });
 
   if (itemsError || !items) return null;
@@ -150,6 +393,8 @@ export async function getPredictionByPublicId(publicId: string): Promise<Predict
     countryCode: prediction.country_code,
     dataStatus: prediction.data_status as ParticipantDataStatus,
     submittedAt: prediction.submitted_at,
+    hasVerifiedOwner: prediction.auth_user_id !== null,
+    currentVersionNumber: currentVersion.version_number,
     rankedParticipantIds: items.map((item) => item.participant_id),
   };
 }
@@ -279,21 +524,28 @@ export async function getEligiblePredictionsForComparison(
   const supabase = getSupabaseServerClient();
   if (!supabase) return [];
 
+  // FOUCH 0.3A: `id` here is the logical prediction's key used only to
+  // group items below; `current_version_id` is what actually scopes
+  // which items count — a prediction with 3 saved versions must still
+  // contribute exactly ONE eligible ranking (its current one), never
+  // three (brief §12: "Freddy has v1, v2, v3 → community sample size
+  // is 1 prediction, not 3").
   const { data: predictions, error } = await supabase
     .from("predictions")
-    .select("id")
+    .select("id, current_version_id")
     .eq("event_slug", eventSlug)
     .eq("data_status", dataStatus)
-    .eq("is_final", true);
+    .eq("is_final", true)
+    .not("current_version_id", "is", null);
 
   if (error || !predictions || predictions.length === 0) return [];
 
-  const predictionIds = predictions.map((p) => p.id);
+  const versionIds = predictions.map((p) => p.current_version_id as string);
 
   const { data: items, error: itemsError } = await supabase
     .from("prediction_items")
-    .select("prediction_id, participant_id, predicted_position")
-    .in("prediction_id", predictionIds)
+    .select("prediction_id, version_id, participant_id, predicted_position")
+    .in("version_id", versionIds)
     .order("predicted_position", { ascending: true });
 
   if (itemsError || !items) return [];
@@ -343,21 +595,26 @@ export async function getLeaderboardRawEntries(
   const supabase = getSupabaseServerClient();
   if (!supabase) return [];
 
+  // FOUCH 0.3A: same current-version-only scoping as
+  // getEligiblePredictionsForComparison above — a prediction with
+  // several saved versions is still exactly one leaderboard entry
+  // (brief §13), never one entry per version.
   const { data: predictions, error } = await supabase
     .from("predictions")
-    .select("id, public_id, nickname, country_code")
+    .select("id, public_id, nickname, country_code, current_version_id")
     .eq("event_slug", eventSlug)
     .eq("data_status", dataStatus)
-    .eq("is_final", true);
+    .eq("is_final", true)
+    .not("current_version_id", "is", null);
 
   if (error || !predictions || predictions.length === 0) return [];
 
-  const predictionIds = predictions.map((p) => p.id);
+  const versionIds = predictions.map((p) => p.current_version_id as string);
 
   const { data: items, error: itemsError } = await supabase
     .from("prediction_items")
-    .select("prediction_id, participant_id, predicted_position")
-    .in("prediction_id", predictionIds)
+    .select("prediction_id, version_id, participant_id, predicted_position")
+    .in("version_id", versionIds)
     .order("predicted_position", { ascending: true });
 
   if (itemsError || !items) return [];
@@ -406,24 +663,32 @@ export async function getWinnerPicksForConsensusChange(
   const supabase = getSupabaseServerClient();
   if (!supabase) return [];
 
+  // FOUCH 0.3A: `submitted_at` remains the prediction's ORIGINAL
+  // submission time (predictions.submitted_at is never touched by an
+  // edit — only prediction_versions.created_at records when each
+  // version was saved). Experiment 01's semantics with an edited
+  // winner pick are addressed separately below (brief §17) — this
+  // function's contract (submission time + CURRENT winner pick) is
+  // unchanged here on purpose.
   const { data: predictions, error } = await supabase
     .from("predictions")
-    .select("id, submitted_at")
+    .select("id, submitted_at, current_version_id")
     .eq("event_slug", eventSlug)
     .eq("data_status", dataStatus)
-    .eq("is_final", true);
+    .eq("is_final", true)
+    .not("current_version_id", "is", null);
 
   if (error || !predictions || predictions.length === 0) return [];
 
-  const predictionIds = predictions.map((p) => p.id);
+  const versionIds = predictions.map((p) => p.current_version_id as string);
 
   // Only position 1 (the winner pick) — and only from predictions with
   // exactly 10 items, so a malformed/partial prediction never counts as
   // an eligible "winner pick" here either.
   const { data: allItems, error: itemsError } = await supabase
     .from("prediction_items")
-    .select("prediction_id, participant_id, predicted_position")
-    .in("prediction_id", predictionIds);
+    .select("prediction_id, version_id, participant_id, predicted_position")
+    .in("version_id", versionIds);
 
   if (itemsError || !allItems) return [];
 

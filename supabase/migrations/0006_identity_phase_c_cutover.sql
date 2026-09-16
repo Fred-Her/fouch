@@ -1,16 +1,13 @@
-﻿-- Beta Hardening 0.2 — Phase C cutover migration.
+﻿﻿-- Beta Hardening 0.2 — Phase C cutover migration.
 --
 -- ============================================================
--- DO NOT RUN THIS AGAINST PRODUCTION YET.
--- This file is prepared for Gate 2 (founder-approved cutover) only.
--- It must be applied in the SAME controlled release as the new
--- verified-lock application code — never before (removes duplicate
--- protection with nothing yet live to replace it) and never
--- meaningfully after (a verified Person B sharing a device with a
--- verified Person A would still be incorrectly blocked by this old
--- constraint, even though the new code never relies on it). See
--- FOUCH_DATABASE_MIGRATION_PLAN.md's "Sequencing" and
--- FOUCH_BETA_HARDENING_02_PHASE_C.md's cutover procedure.
+-- GATE 2 CLOSED — ALREADY APPLIED TO PRODUCTION.
+-- This migration was applied in the same controlled release as the
+-- verified-lock application code (Gate 1 + Gate 2, deployed together)
+-- per the sequencing in FOUCH_DATABASE_MIGRATION_PLAN.md and
+-- FOUCH_BETA_HARDENING_02_PHASE_C.md's cutover procedure. It is kept
+-- here, unchanged, as the historical record of that cutover — do not
+-- re-run it or modify the index it drops as part of FOUCH 0.3A.
 -- ============================================================
 --
 -- Purpose: drop the old (event_slug, device_token) unique index. Once
