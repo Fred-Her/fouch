@@ -1,4 +1,4 @@
-﻿﻿import "server-only";
+﻿﻿﻿import "server-only";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isPredictionWindowOpen, type EventLockConfig } from "@/lib/prediction-lock-logic";
 
@@ -35,7 +35,7 @@ export async function getEventLockConfig(eventSlug: string): Promise<EventLockCo
 
   const { data, error } = await supabase
     .from("events")
-    .select("prediction_open_at, prediction_lock_at")
+    .select("prediction_open_at, prediction_lock_at, timezone")
     .eq("slug", eventSlug)
     .maybeSingle();
 
@@ -44,5 +44,6 @@ export async function getEventLockConfig(eventSlug: string): Promise<EventLockCo
   return {
     predictionOpenAt: data.prediction_open_at,
     predictionLockAt: data.prediction_lock_at,
+    timezone: data.timezone,
   };
 }

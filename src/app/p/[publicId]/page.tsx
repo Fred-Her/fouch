@@ -1,4 +1,4 @@
-﻿﻿import type { Metadata } from "next";
+﻿﻿﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CountryFlag } from "@/components/CountryFlag";
@@ -105,6 +105,7 @@ export default async function PublicPredictionPage({
         canEdit={canEdit}
         showLockedNotice={showLockedNotice}
         predictionLockAt={lockConfig?.predictionLockAt ?? null}
+        predictionTimezone={lockConfig?.timezone ?? null}
         fouchScore={<FouchScore prediction={prediction} event={event} publicId={publicId} />}
         youVsTheWorld={<YouVsTheWorld prediction={prediction} event={event} />}
         yourCrowdChanged={<YourCrowdChanged prediction={prediction} event={event} />}

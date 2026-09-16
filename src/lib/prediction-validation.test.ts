@@ -1,4 +1,4 @@
-﻿﻿import { describe, it, expect } from "vitest";
+﻿﻿﻿import { describe, it, expect } from "vitest";
 import { validateSubmission } from "./prediction-validation";
 import type { FouchEvent } from "@/types/event";
 import type { Participant } from "@/types/participant";
@@ -58,20 +58,20 @@ describe("validateSubmission — FOUCH 0.3A lock timing, driven entirely by the 
   const LOCK_MS = Date.parse(LOCK_AT);
 
   it("allows a submission/edit one second before lock", () => {
-    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT };
+    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT, timezone: null };
     const result = validateSubmission({ participantIds: TOP_10 }, EVENT, PARTICIPANTS, 10, lockConfig, LOCK_MS - 1000);
     expect(result.valid).toBe(true);
   });
 
   it("rejects a submission/edit exactly at the lock instant", () => {
-    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT };
+    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT, timezone: null };
     const result = validateSubmission({ participantIds: TOP_10 }, EVENT, PARTICIPANTS, 10, lockConfig, LOCK_MS);
     expect(result.valid).toBe(false);
     expect(result.valid || result.error).toContain("locked");
   });
 
   it("rejects a submission/edit after the lock instant", () => {
-    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT };
+    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT, timezone: null };
     const result = validateSubmission(
       { participantIds: TOP_10 },
       EVENT,
@@ -91,7 +91,7 @@ describe("validateSubmission — FOUCH 0.3A lock timing, driven entirely by the 
   it("never reads timing from the `event` (FouchEvent) argument — that type no longer even has lock fields, so this test simply documents that validateSubmission's timing decision is fully determined by lockConfig+now", () => {
     const eventWithoutLockFields = { ...EVENT } as FouchEvent;
     expect("predictionLockAt" in eventWithoutLockFields).toBe(false);
-    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT };
+    const lockConfig: EventLockConfig = { predictionOpenAt: null, predictionLockAt: LOCK_AT, timezone: null };
     const result = validateSubmission(
       { participantIds: TOP_10 },
       eventWithoutLockFields,

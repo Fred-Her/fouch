@@ -1,4 +1,4 @@
-﻿﻿import { notFound, redirect } from "next/navigation";
+﻿﻿﻿import { notFound, redirect } from "next/navigation";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
@@ -61,6 +61,7 @@ export default async function EditPredictionPage({
         requiredCount={requiredCount}
         expectedVersionNumber={prediction.currentVersionNumber}
         predictionLockAt={lockConfig?.predictionLockAt ?? null}
+        predictionTimezone={lockConfig?.timezone ?? null}
       />
     </main>
   );

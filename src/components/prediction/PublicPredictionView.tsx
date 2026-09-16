@@ -1,4 +1,4 @@
-﻿﻿"use client";
+﻿﻿﻿"use client";
 
 import { useEffect, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
@@ -7,19 +7,9 @@ import { Pencil } from "lucide-react";
 import { CountryFlag } from "@/components/CountryFlag";
 import { track } from "@/lib/analytics";
 import { siteUrl } from "@/lib/site";
+import { formatEventLocalLockTime } from "@/lib/event-time-display";
 import type { Participant } from "@/types/participant";
 import { ShareActions } from "./ShareActions";
-
-function formatLockDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
 
 export function PublicPredictionView({
   eventSlug,
@@ -29,6 +19,7 @@ export function PublicPredictionView({
   canEdit = false,
   showLockedNotice = false,
   predictionLockAt = null,
+  predictionTimezone = null,
   fouchScore,
   youVsTheWorld,
   yourCrowdChanged,
@@ -55,6 +46,12 @@ export function PublicPredictionView({
   showLockedNotice?: boolean;
   /** ISO datetime, only used for display ("until {date}"). */
   predictionLockAt?: string | null;
+  /** FOUCH 0.3A.1 — IANA timezone identifier for the event (e.g.
+   * "America/Puerto_Rico"), used ONLY to render predictionLockAt
+   * unambiguously in event-local time (see event-time-display.ts).
+   * Null falls back to an explicit UTC-labeled rendering — never the
+   * viewer's browser timezone. */
+  predictionTimezone?: string | null;
   /** FOUCH Score section (Sprint 4) — null/absent renders nothing, which
    * is exactly the pre-result experience. Server Component, passed down
    * for the same reason as youVsTheWorld below. */
@@ -115,7 +112,7 @@ export function PublicPredictionView({
           <p className="font-display text-lg text-accent-strong">YOUR CALL IS IN</p>
           {predictionLockAt ? (
             <p className="mt-1 text-sm text-text-secondary">
-              You can update your picks until {formatLockDate(predictionLockAt)}.
+              You can update your picks until {formatEventLocalLockTime(predictionLockAt, predictionTimezone)}.
             </p>
           ) : null}
         </div>
@@ -147,7 +144,7 @@ export function PublicPredictionView({
           </Link>
           {predictionLockAt ? (
             <p className="mt-2 text-xs text-text-muted">
-              You can update your picks until {formatLockDate(predictionLockAt)}.
+              You can update your picks until {formatEventLocalLockTime(predictionLockAt, predictionTimezone)}.
             </p>
           ) : null}
         </div>

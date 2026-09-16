@@ -1,8 +1,9 @@
-﻿﻿"use client";
+﻿﻿﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { track } from "@/lib/analytics";
+import { formatEventLocalLockTime } from "@/lib/event-time-display";
 import {
   startEmailVerification,
   verifyEmailAndEditPrediction,
@@ -36,6 +37,7 @@ export function EditPredictionFlow({
   requiredCount,
   expectedVersionNumber,
   predictionLockAt,
+  predictionTimezone,
 }: {
   eventSlug: string;
   publicId: string;
@@ -44,6 +46,10 @@ export function EditPredictionFlow({
   requiredCount: number;
   expectedVersionNumber: number;
   predictionLockAt: string | null;
+  /** FOUCH 0.3A.1 — IANA timezone identifier for the event, used only
+   * for unambiguous display of predictionLockAt (see
+   * event-time-display.ts). */
+  predictionTimezone: string | null;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>(initialRankedParticipantIds);
@@ -214,11 +220,7 @@ export function EditPredictionFlow({
     <div className="mt-6">
       {predictionLockAt ? (
         <p className="mb-4 text-xs text-text-muted">
-          You can update your picks until{" "}
-          {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(
-            new Date(predictionLockAt),
-          )}
-          .
+          You can update your picks until {formatEventLocalLockTime(predictionLockAt, predictionTimezone)}.
         </p>
       ) : null}
 
@@ -262,7 +264,7 @@ export function EditPredictionFlow({
       ) : null}
 
       {step === "email" ? (
-        <EmailStep submitting={emailSubmitting} errorMessage={emailError} onSendCode={handleSendCode} />
+        <EmailStep mode="edit" submitting={emailSubmitting} errorMessage={emailError} onSendCode={handleSendCode} />
       ) : null}
 
       {step === "otp" && accessTokenForRetry ? (

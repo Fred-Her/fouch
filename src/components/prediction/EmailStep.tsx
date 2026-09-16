@@ -1,12 +1,18 @@
-﻿"use client";
+﻿﻿"use client";
 
 import { useState } from "react";
+import { getEmailStepHeading, type EmailStepMode } from "@/lib/email-step-copy";
 
 export function EmailStep({
+  mode,
   submitting,
   errorMessage,
   onSendCode,
 }: {
+  /** FOUCH 0.3A.1 — "create" for a first-time submission, "edit" for
+   * an existing verified prediction. Drives the heading copy only;
+   * OTP behavior is identical either way (brief §8-9). */
+  mode: EmailStepMode;
   submitting: boolean;
   errorMessage: string | null;
   onSendCode: (email: string) => void;
@@ -15,7 +21,7 @@ export function EmailStep({
 
   return (
     <div className="mt-8 border-t border-border pt-6">
-      <p className="font-display text-xl text-text-primary">Enter your email to lock your prediction.</p>
+      <p className="font-display text-xl text-text-primary">{getEmailStepHeading(mode)}</p>
       <p className="mt-1 text-sm text-text-secondary">We&apos;ll send you a verification code — no password needed.</p>
 
       <label className="mt-4 block">

@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -267,7 +267,7 @@ export function ReviewContent({
       ) : null}
 
       {step === "email" ? (
-        <EmailStep submitting={emailSubmitting} errorMessage={emailError} onSendCode={handleSendCode} />
+        <EmailStep mode="create" submitting={emailSubmitting} errorMessage={emailError} onSendCode={handleSendCode} />
       ) : null}
 
       {step === "otp" && accessTokenForRetry ? (

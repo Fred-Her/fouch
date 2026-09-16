@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿﻿﻿/**
  * FOUCH 0.3A — pure decision logic split out of events-db.ts
  * specifically so it has NO "server-only" import and can be unit
  * tested directly (vitest's jsdom environment cannot import a
@@ -10,6 +10,10 @@
 export interface EventLockConfig {
   predictionOpenAt: string | null;
   predictionLockAt: string | null;
+  /** FOUCH 0.3A.1 — IANA timezone identifier (e.g.
+   * "America/Puerto_Rico"), display-only. Never used for lock
+   * authorization — isPredictionWindowOpen below never reads it. */
+  timezone: string | null;
 }
 
 /**
