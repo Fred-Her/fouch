@@ -1,7 +1,7 @@
 ﻿import { CountryFlag } from "@/components/CountryFlag";
 import { getEntryNoun } from "@/lib/events";
 import { getEligiblePredictionsForComparison, type PredictionRecord } from "@/lib/predictions-db";
-import { getParticipantsForEvent } from "@/lib/participants";
+import { resolveParticipantsByIds } from "@/lib/participants";
 import {
   computeComparison,
   getSampleSizeBucket,
@@ -33,18 +33,25 @@ export async function YouVsTheWorld({
   prediction: PredictionRecord;
   event: FouchEvent;
 }) {
-  const participantData = getParticipantsForEvent(event.slug);
-  if (!participantData) return null;
-
-  const participantsById = new Map(
-    participantData.participants.map((participant) => [participant.id, participant]),
-  );
-
   const eligible = await getEligiblePredictionsForComparison(event.slug, prediction.dataStatus);
   const comparison = computeComparison(prediction.rankedParticipantIds, eligible, prediction.id);
   const bucket = getSampleSizeBucket(comparison.population);
   const mode = getComparisonDisplayMode(comparison.population);
   const pluralNoun = getEntryNoun(event, true);
+
+  // FOUCH 0.3B: resolves every participant id this section could
+  // possibly render â€” the viewer's own winner pick AND whatever ids
+  // appear in the community aggregate (sameWinner/boldestPick/
+  // communityTop10) â€” regardless of current status. Any of those ids
+  // could belong to someone else's prediction referencing a country
+  // whose delegate has since become WITHDRAWN/REPLACED; this must
+  // still resolve to a real name/country, never silently vanish.
+  const idsToResolve = new Set<string>();
+  if (comparison.sameWinner) idsToResolve.add(comparison.sameWinner.participantId);
+  if (comparison.boldestPick) idsToResolve.add(comparison.boldestPick.participantId);
+  for (const entry of comparison.communityTop10) idsToResolve.add(entry.participantId);
+
+  const participantsById = await resolveParticipantsByIds(event.slug, Array.from(idsToResolve));
 
   return (
     <section className="mt-12 border-t border-border pt-10">
@@ -63,7 +70,7 @@ export async function YouVsTheWorld({
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-2 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo community data — not official {pluralNoun}
+          Demo community data â€” not official {pluralNoun}
         </p>
       ) : null}
 
@@ -77,13 +84,13 @@ export async function YouVsTheWorld({
         <div className="mt-8 space-y-10">
           {bucket === "1_4" ? (
             <p className="text-sm text-text-muted">
-              The crowd is just forming — {comparison.population} other{" "}
+              The crowd is just forming â€” {comparison.population} other{" "}
               {comparison.population === 1 ? pluralNoun.slice(0, -1) : pluralNoun} in so far.
             </p>
           ) : null}
           {bucket === "5_9" ? (
             <p className="text-xs uppercase tracking-[0.15em] text-text-muted">
-              Early signal · based on {comparison.population} other predictions
+              Early signal Â· based on {comparison.population} other predictions
             </p>
           ) : null}
 
@@ -99,7 +106,7 @@ export async function YouVsTheWorld({
                 <CountryFlag
                   countryCode={participantsById.get(comparison.sameWinner.participantId)?.countryCode}
                 />{" "}
-                {participantsById.get(comparison.sameWinner.participantId)?.displayName} —{" "}
+                {participantsById.get(comparison.sameWinner.participantId)?.displayName} â€”{" "}
                 {comparison.sameWinner.count === 0
                   ? "nobody else made the same call."
                   : mode === "count"

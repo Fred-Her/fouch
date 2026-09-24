@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getEventBySlug } from "@/lib/events";
 import { getParticipantsForEvent } from "@/lib/participants";
+import { formatContestantListUpdated } from "@/lib/event-time-display";
 import { PredictionBuilder } from "@/components/prediction/PredictionBuilder";
 
 export async function generateMetadata({
@@ -16,7 +17,7 @@ export async function generateMetadata({
   if (!event) return {};
 
   return {
-    title: `Build your Top 10 — ${event.name}`,
+    title: `Build your Top 10 â€” ${event.name}`,
     description: "Choose the 10 contestants you think will go furthest.",
   };
 }
@@ -35,7 +36,7 @@ export default async function PredictPage({
   const event = getEventBySlug(slug);
   if (!event) notFound();
 
-  const participantData = getParticipantsForEvent(slug);
+  const participantData = await getParticipantsForEvent(slug);
   if (!participantData || participantData.participants.length === 0) {
     return (
       <main className="mx-auto max-w-content px-6 py-16">
@@ -53,7 +54,7 @@ export default async function PredictPage({
     );
   }
 
-  const { status, participants } = participantData;
+  const { status, participants, sourceCheckedAt } = participantData;
   const requiredCount = Math.min(REQUIRED_SELECTIONS, participants.length);
 
   return (
@@ -78,7 +79,11 @@ export default async function PredictPage({
 
         {status === "demo" ? (
           <p className="mt-4 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-            Demo participant data — not the official lineup
+            Demo participant data â€” not the official lineup
+          </p>
+        ) : sourceCheckedAt ? (
+          <p className="mt-4 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
+            {formatContestantListUpdated(sourceCheckedAt)}
           </p>
         ) : null}
       </div>

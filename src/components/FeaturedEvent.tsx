@@ -25,14 +25,14 @@ export async function FeaturedEvent({
     .toUpperCase();
 
   // Sprint 5.1: the secondary leaderboard link is event/result-state
-  // driven, never hardcoded to a specific slug — it only appears once
+  // driven, never hardcoded to a specific slug â€” it only appears once
   // an official/demo result genuinely exists to rank against.
-  const participantData = getParticipantsForEvent(event.slug);
+  const participantData = await getParticipantsForEvent(event.slug);
   const hasLeaderboard = participantData
     ? Boolean(await getOfficialResult(event.slug, participantData.status))
     : false;
 
-  // Decorative only — a preview of the ranking mechanic, not real input.
+  // Decorative only â€” a preview of the ranking mechanic, not real input.
   const previewSlots = [1, 2, 3];
 
   return (
@@ -68,12 +68,12 @@ export async function FeaturedEvent({
         </h2>
 
         <p className="mt-4 text-sm uppercase tracking-[0.15em] text-text-muted">
-          {dayMonth} · {event.subtitle}
+          {dayMonth} Â· {event.subtitle}
         </p>
 
         <p className="mt-8 text-lg text-text-secondary">{dictionary.featuredEvent.prompt}</p>
 
-        {/* Decorative preview of the ranking mechanic — not interactive. */}
+        {/* Decorative preview of the ranking mechanic â€” not interactive. */}
         <div aria-hidden className="mt-6 max-w-xs space-y-2">
           {previewSlots.map((slot) => (
             <div key={slot} className="flex items-center gap-3">
@@ -106,7 +106,7 @@ export async function FeaturedEvent({
               eventProperties={{ event_slug: event.slug, source: "home" }}
               className="text-sm text-text-secondary transition-colors hover:text-accent-strong"
             >
-              View leaderboard →
+              View leaderboard â†’
             </TrackedLink>
           ) : null}
         </div>

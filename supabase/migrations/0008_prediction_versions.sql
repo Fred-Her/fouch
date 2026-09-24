@@ -1,14 +1,14 @@
-﻿﻿-- FOUCH 0.3A — Editable Predictions & Version History.
+﻿-- FOUCH 0.3A â€” Editable Predictions & Version History.
 --
 -- ============================================================
 -- DO NOT RUN THIS AGAINST PRODUCTION YET.
 -- Prepared for local verification and founder review only. See
--- FOUCH_0_3A brief §22 (Migration Safety) — this sprint has a
+-- FOUCH_0_3A brief Â§22 (Migration Safety) â€” this sprint has a
 -- deployment gate; production application is a separate, explicit
 -- founder decision.
 -- ============================================================
 --
--- Model: `predictions` remains the LOGICAL entity — one row per
+-- Model: `predictions` remains the LOGICAL entity â€” one row per
 -- identity/event (its existing uniqueness rules from Phase A/C are
 -- completely untouched: predictions_one_final_per_identity still
 -- enforces one final logical prediction per (event_slug,
@@ -17,13 +17,13 @@
 --
 -- New: `prediction_versions` holds one IMMUTABLE snapshot per save.
 -- `predictions.current_version_id` points at whichever version is
--- currently authoritative. `prediction_items` — previously scoped
--- directly to a prediction — is rescoped to a specific version, since
+-- currently authoritative. `prediction_items` â€” previously scoped
+-- directly to a prediction â€” is rescoped to a specific version, since
 -- a ranking is a property of a version, not of the logical prediction
 -- itself. `prediction_id` is kept on prediction_items as a
 -- denormalized convenience column (not required for correctness,
 -- useful for "all items ever submitted for this prediction" queries),
--- but nothing in 0.3A relies on it for "current" reads — those always
+-- but nothing in 0.3A relies on it for "current" reads â€” those always
 -- go through predictions.current_version_id.
 --
 -- Invariants this migration establishes:
@@ -31,7 +31,7 @@
 --     are never updated by application code after insert)
 --   - one logical prediction per identity/event (unchanged, enforced
 --     the same way it always was)
---   - public_id is untouched — it lives on `predictions`, never
+--   - public_id is untouched â€” it lives on `predictions`, never
 --     duplicated onto versions
 --   - current version is resolvable in one step via
 --     predictions.current_version_id
@@ -63,7 +63,7 @@ alter table prediction_items
 -- that is byte-for-byte what it already had, and make it current.
 -- Idempotent: re-running this migration is safe because the WHERE
 -- clauses below only touch predictions that don't have a
--- current_version_id yet — a prediction already migrated is skipped
+-- current_version_id yet â€” a prediction already migrated is skipped
 -- entirely on a second run, never given a duplicate version 1.
 -- ------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ where pv.prediction_id = p.id
 -- Tighten constraints now that backfill is complete.
 -- ------------------------------------------------------------------
 
--- Defensive check before tightening — surfaces as a migration failure
+-- Defensive check before tightening â€” surfaces as a migration failure
 -- (not a silent data-integrity gap) if anything above didn't reach
 -- every row, e.g. a prediction with zero items.
 do $$
@@ -118,10 +118,10 @@ alter table prediction_items
   alter column version_id set not null;
 
 -- Replace the old prediction-scoped uniqueness with version-scoped
--- uniqueness — a ranking is unique within a version, not within the
+-- uniqueness â€” a ranking is unique within a version, not within the
 -- logical prediction as a whole (two versions of the same prediction
 -- may legitimately reuse the same participant/position). Dropping the
--- CONSTRAINT (not a bare DROP INDEX — Postgres refuses to drop a
+-- CONSTRAINT (not a bare DROP INDEX â€” Postgres refuses to drop a
 -- constraint's backing index directly) also drops its backing index.
 -- Constraint names below are Postgres's default naming for the
 -- inline `unique (a, b)` declarations in 0002_predictions.sql
@@ -156,12 +156,12 @@ end $$;
 create index if not exists prediction_items_version_id_idx on prediction_items (version_id);
 
 -- ------------------------------------------------------------------
--- RLS: version history is private/internal for now (brief §6) — no
+-- RLS: version history is private/internal for now (brief Â§6) â€” no
 -- version history UI in this sprint, and prediction_versions carries
 -- no reader-facing information on its own (no ranking, just
 -- version_number/created_at), but it is not granted to anon/
 -- authenticated at all, matching "historical versions are private".
--- prediction_items keeps its existing public-read policy unchanged —
+-- prediction_items keeps its existing public-read policy unchanged â€”
 -- reading it publicly was always fine (it's how the public prediction
 -- page and every scoring/leaderboard query already work), and that
 -- policy has no notion of "current" to begin with; the application
@@ -172,7 +172,7 @@ create index if not exists prediction_items_version_id_idx on prediction_items (
 
 alter table prediction_versions enable row level security;
 -- No select/insert/update/delete policy for anon/authenticated is
--- defined — with RLS enabled and no matching policy, all access
+-- defined â€” with RLS enabled and no matching policy, all access
 -- through the anon/authenticated roles is denied. Only the
 -- service-role key (server-side only, same as every other write path
 -- in this codebase) can read or write this table.

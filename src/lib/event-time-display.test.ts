@@ -1,9 +1,9 @@
-﻿﻿import { describe, it, expect } from "vitest";
-import { formatEventLocalLockTime, deriveLocationLabel } from "./event-time-display";
+﻿import { describe, it, expect } from "vitest";
+import { formatEventLocalLockTime, deriveLocationLabel, formatContestantListUpdated } from "./event-time-display";
 
 const MISS_UNIVERSE_LOCK_AT = "2026-11-24T00:00:00Z";
 
-describe("deriveLocationLabel — generic IANA-id -> human label, no new config field", () => {
+describe("deriveLocationLabel â€” generic IANA-id -> human label, no new config field", () => {
   it("derives 'Puerto Rico' from 'America/Puerto_Rico'", () => {
     expect(deriveLocationLabel("America/Puerto_Rico")).toBe("Puerto Rico");
   });
@@ -17,17 +17,17 @@ describe("deriveLocationLabel — generic IANA-id -> human label, no new config 
   });
 });
 
-describe("formatEventLocalLockTime — unambiguous, event-local, never a naked time", () => {
+describe("formatEventLocalLockTime â€” unambiguous, event-local, never a naked time", () => {
   it("resolves the Miss Universe 2026 lock instant correctly in Puerto Rico event time", () => {
     const result = formatEventLocalLockTime(MISS_UNIVERSE_LOCK_AT, "America/Puerto_Rico");
     // 2026-11-24T00:00:00Z is 2026-11-23 20:00 in America/Puerto_Rico
-    // (AST, UTC-4 year-round — Puerto Rico does not observe DST).
+    // (AST, UTC-4 year-round â€” Puerto Rico does not observe DST).
     expect(result).toBe("Nov 23 at 8:00 PM AST (Puerto Rico)");
   });
 
-  it("always includes a timezone abbreviation — never a naked time with no context", () => {
+  it("always includes a timezone abbreviation â€” never a naked time with no context", () => {
     const result = formatEventLocalLockTime(MISS_UNIVERSE_LOCK_AT, "America/Puerto_Rico");
-    expect(result).toMatch(/[A-Z]{2,5}/); // AST, UTC, GMT+N, etc. — some abbreviation/offset token
+    expect(result).toMatch(/[A-Z]{2,5}/); // AST, UTC, GMT+N, etc. â€” some abbreviation/offset token
     expect(result).not.toBe("8:00 PM");
     expect(result).not.toBe("9:00 PM");
   });
@@ -37,7 +37,7 @@ describe("formatEventLocalLockTime — unambiguous, event-local, never a naked t
     expect(result).toContain("(Puerto Rico)");
   });
 
-  it("falls back to an explicit UTC-labeled rendering when timezone is null — never a silently-assumed local time", () => {
+  it("falls back to an explicit UTC-labeled rendering when timezone is null â€” never a silently-assumed local time", () => {
     const result = formatEventLocalLockTime(MISS_UNIVERSE_LOCK_AT, null);
     expect(result).toBe("Nov 24 at 12:00 AM UTC");
     expect(result).not.toContain("(");
@@ -49,10 +49,10 @@ describe("formatEventLocalLockTime — unambiguous, event-local, never a naked t
     expect(result).toBe("Nov 24 at 12:00 AM UTC");
   });
 
-  it("CRITICAL: formatting for display never changes the absolute instant the ISO string represents — same instant, different timezone displays, both parse back to the identical epoch millisecond", () => {
+  it("CRITICAL: formatting for display never changes the absolute instant the ISO string represents â€” same instant, different timezone displays, both parse back to the identical epoch millisecond", () => {
     const epochBefore = new Date(MISS_UNIVERSE_LOCK_AT).getTime();
 
-    // Render in three different timezones — none of this touches the
+    // Render in three different timezones â€” none of this touches the
     // original string or reinterprets it as timezone-less.
     formatEventLocalLockTime(MISS_UNIVERSE_LOCK_AT, "America/Puerto_Rico");
     formatEventLocalLockTime(MISS_UNIVERSE_LOCK_AT, "America/Santiago");
@@ -63,8 +63,22 @@ describe("formatEventLocalLockTime — unambiguous, event-local, never a naked t
 
     // The instant itself, independent of any display formatting, is
     // exactly what server-side lock enforcement compares against
-    // (see prediction-lock-logic.test.ts) — proving here that display
+    // (see prediction-lock-logic.test.ts) â€” proving here that display
     // formatting is a pure read, never a mutation of that instant.
     expect(epochBefore).toBe(Date.parse(MISS_UNIVERSE_LOCK_AT));
+  });
+});
+
+describe("formatContestantListUpdated â€” FOUCH 0.3B Â§13 restrained roster-freshness copy", () => {
+  it("renders a plain, human date â€” never the word 'demo'", () => {
+    const result = formatContestantListUpdated("2026-09-20T12:00:00Z");
+    expect(result).toBe("Contestant list updated Sep 20, 2026");
+    expect(result.toLowerCase()).not.toContain("demo");
+  });
+
+  it("never claims completeness â€” no 'official lineup' or 'complete' wording", () => {
+    const result = formatContestantListUpdated("2026-09-20T12:00:00Z");
+    expect(result.toLowerCase()).not.toContain("official lineup");
+    expect(result.toLowerCase()).not.toContain("complete");
   });
 });

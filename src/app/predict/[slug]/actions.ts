@@ -1,4 +1,4 @@
-﻿﻿"use server";
+﻿"use server";
 
 import { getEventBySlug } from "@/lib/events";
 import { getEventLockConfig } from "@/lib/events-db";
@@ -26,7 +26,7 @@ export async function submitPrediction(
     return { success: false, error: "This event doesn't exist." };
   }
 
-  const participantData = getParticipantsForEvent(input.eventSlug);
+  const participantData = await getParticipantsForEvent(input.eventSlug);
   if (!participantData) {
     return { success: false, error: "This event has no contestants configured." };
   }
@@ -35,7 +35,7 @@ export async function submitPrediction(
 
   // FOUCH 0.3A: lock/open timing comes from Supabase (single
   // authoritative source), fetched fresh on every submission attempt
-  // — never cached, never trusted from the client.
+  // â€” never cached, never trusted from the client.
   const lockConfig = await getEventLockConfig(input.eventSlug);
 
   const validation = validateSubmission(
@@ -78,7 +78,7 @@ export async function submitPrediction(
  * Checks whether this device already has a submitted prediction for
  * this event, so the Review screen can redirect straight to the
  * existing public prediction instead of showing the submit form again
- * — a submitted prediction is immutable in Sprint 2.
+ * â€” a submitted prediction is immutable in Sprint 2.
  */
 export async function checkExistingSubmission(
   eventSlug: string,

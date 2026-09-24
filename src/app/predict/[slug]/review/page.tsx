@@ -15,7 +15,7 @@ export async function generateMetadata({
   const event = getEventBySlug(slug);
   if (!event) return {};
 
-  return { title: `Your Top 10 — ${event.name}` };
+  return { title: `Your Top 10 â€” ${event.name}` };
 }
 
 const REQUIRED_SELECTIONS = 10;
@@ -29,7 +29,7 @@ export default async function ReviewPage({
   const event = getEventBySlug(slug);
   if (!event) notFound();
 
-  const participantData = getParticipantsForEvent(slug);
+  const participantData = await getParticipantsForEvent(slug);
   if (!participantData || participantData.participants.length === 0) notFound();
 
   const requiredCount = Math.min(REQUIRED_SELECTIONS, participantData.participants.length);

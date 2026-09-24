@@ -1,5 +1,5 @@
 ﻿import { getEntryNoun } from "@/lib/events";
-import { getParticipantsForEvent } from "@/lib/participants";
+import { resolveParticipantsByIds } from "@/lib/participants";
 import { getPredictionScore } from "@/lib/scoring-service";
 import { getOfficialResult } from "@/lib/results-db";
 import { MIN_PERCENTILE_SAMPLE } from "@/lib/scoring";
@@ -20,20 +20,20 @@ const BAND_LABEL: Record<ScoreBand, string> = {
   ELITE: "Elite call",
 };
 
-/** "8.333..." -> "8.3", "25.0" -> "25" — one decimal, no trailing ".0". */
+/** "8.333..." -> "8.3", "25.0" -> "25" â€” one decimal, no trailing ".0". */
 function formatPoints(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 /**
- * Renders nothing (returns null) when there's no official result yet —
+ * Renders nothing (returns null) when there's no official result yet â€”
  * the pre-result experience is unchanged, never a fabricated score.
  * Server Component: fetches + scores server-side, only the final
  * numbers reach the client (via the tracker's props, not raw data).
  *
  * Sprint 4.1: UI clarity only. Every number below comes straight from
- * the existing score engine's ScoreBreakdown — nothing here
+ * the existing score engine's ScoreBreakdown â€” nothing here
  * recalculates or duplicates scoring logic.
  */
 export async function FouchScore({
@@ -54,14 +54,19 @@ export async function FouchScore({
   if (!result) return null;
 
   // Re-reads the same official-result row already used inside
-  // getPredictionScore, purely to display who the actual winner was —
+  // getPredictionScore, purely to display who the actual winner was â€”
   // no scoring logic is duplicated, only a read.
   const official = await getOfficialResult(event.slug, prediction.dataStatus);
 
-  const participantData = getParticipantsForEvent(event.slug);
-  const participantsById = new Map(
-    (participantData?.participants ?? []).map((participant) => [participant.id, participant]),
-  );
+  // FOUCH 0.3B: resolves regardless of current participant status â€”
+  // both the user's own historical winner pick and the official
+  // result's winner id must still render even if that country's
+  // delegate has since become WITHDRAWN/REPLACED.
+  const idsToResolve = new Set<string>();
+  if (prediction.rankedParticipantIds[0]) idsToResolve.add(prediction.rankedParticipantIds[0]);
+  if (official) idsToResolve.add(official.winner);
+
+  const participantsById = await resolveParticipantsByIds(event.slug, Array.from(idsToResolve));
   const userWinnerPick = prediction.rankedParticipantIds[0]
     ? participantsById.get(prediction.rankedParticipantIds[0])
     : undefined;
@@ -83,7 +88,7 @@ export async function FouchScore({
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-2 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo result — not an official outcome
+          Demo result â€” not an official outcome
         </p>
       ) : null}
 
@@ -112,7 +117,7 @@ export async function FouchScore({
           <dd className="mt-2">
             {winner.hit ? (
               <span className="inline-flex items-center gap-1.5 text-accent-strong">
-                ✓
+                âœ“
                 {userWinnerPick ? (
                   <>
                     <CountryFlag countryCode={userWinnerPick.countryCode} />
@@ -125,14 +130,14 @@ export async function FouchScore({
             ) : (
               <div className="space-y-1 text-text-primary">
                 <p className="flex items-center gap-1.5">
-                  <span className="text-text-muted">✗ Missed — your pick:</span>
+                  <span className="text-text-muted">âœ— Missed â€” your pick:</span>
                   {userWinnerPick ? (
                     <>
                       <CountryFlag countryCode={userWinnerPick.countryCode} />
                       {userWinnerPick.displayName}
                     </>
                   ) : (
-                    "—"
+                    "â€”"
                   )}
                 </p>
                 {actualWinner ? (
@@ -150,19 +155,19 @@ export async function FouchScore({
         <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Podium</dt>
           <dd className="text-text-primary">
-            {podium.hits} of {podium.total} · {formatPoints(podium.earned)} / {podium.max}
+            {podium.hits} of {podium.total} Â· {formatPoints(podium.earned)} / {podium.max}
           </dd>
         </div>
         <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Top 5</dt>
           <dd className="text-text-primary">
-            {top5.hits} of {top5.total} · {formatPoints(top5.earned)} / {top5.max}
+            {top5.hits} of {top5.total} Â· {formatPoints(top5.earned)} / {top5.max}
           </dd>
         </div>
         <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Top 10</dt>
           <dd className="text-text-primary">
-            {top10.hits} of {top10.total} · {formatPoints(top10.earned)} / {top10.max}
+            {top10.hits} of {top10.total} Â· {formatPoints(top10.earned)} / {top10.max}
           </dd>
         </div>
         <div>

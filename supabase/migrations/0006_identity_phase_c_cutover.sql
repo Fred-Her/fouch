@@ -1,18 +1,18 @@
-﻿﻿-- Beta Hardening 0.2 — Phase C cutover migration.
+﻿-- Beta Hardening 0.2 â€” Phase C cutover migration.
 --
 -- ============================================================
--- GATE 2 CLOSED — ALREADY APPLIED TO PRODUCTION.
+-- GATE 2 CLOSED â€” ALREADY APPLIED TO PRODUCTION.
 -- This migration was applied in the same controlled release as the
 -- verified-lock application code (Gate 1 + Gate 2, deployed together)
 -- per the sequencing in FOUCH_DATABASE_MIGRATION_PLAN.md and
 -- FOUCH_BETA_HARDENING_02_PHASE_C.md's cutover procedure. It is kept
--- here, unchanged, as the historical record of that cutover — do not
+-- here, unchanged, as the historical record of that cutover â€” do not
 -- re-run it or modify the index it drops as part of FOUCH 0.3A.
 -- ============================================================
 --
 -- Purpose: drop the old (event_slug, device_token) unique index. Once
 -- this runs, device_token is purely the soft, non-blocking signal
--- described in FOUCH_IDENTITY_ARCHITECTURE.md — the hard duplicate
+-- described in FOUCH_IDENTITY_ARCHITECTURE.md â€” the hard duplicate
 -- rule becomes exclusively predictions_one_final_per_identity
 -- (already live since Phase A).
 --
@@ -24,7 +24,7 @@
 
 drop index if exists predictions_event_device_unique;
 
--- Rollback (only if needed — see FOUCH_BETA_HARDENING_02_PHASE_C.md's
+-- Rollback (only if needed â€” see FOUCH_BETA_HARDENING_02_PHASE_C.md's
 -- rollback plan): restores the exact original constraint.
 --
 -- create unique index if not exists predictions_event_device_unique

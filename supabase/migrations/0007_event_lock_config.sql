@@ -1,4 +1,4 @@
-﻿﻿-- FOUCH 0.3A — event lock configuration moves from application code
+﻿-- FOUCH 0.3A â€” event lock configuration moves from application code
 -- into the real `events` table (created but unused since 0001_init.sql).
 --
 -- Why: prediction_lock_at previously lived as a hardcoded ISO string
@@ -9,7 +9,7 @@
 -- `events.prediction_lock_at` the SINGLE authoritative source for
 -- lock enforcement going forward. src/lib/events.ts may continue to
 -- provide display-only metadata (name, subtitle, hero asset) for now
--- — it is no longer consulted for lock/open timing.
+-- â€” it is no longer consulted for lock/open timing.
 --
 -- Additive and idempotent:
 --   - ADD COLUMN IF NOT EXISTS for both new columns.
@@ -31,7 +31,7 @@ alter table events
 
 comment on column events.prediction_lock_at is
   'Authoritative lock time for this event''s predictions (FOUCH 0.3A). '
-  'Server-side code must read this column — never src/lib/events.ts — '
+  'Server-side code must read this column â€” never src/lib/events.ts â€” '
   'and must compare it against server/database time, never client time.';
 
 comment on column events.prediction_open_at is
@@ -40,7 +40,7 @@ comment on column events.prediction_open_at is
 
 -- Seed/update the one real event this product currently supports.
 -- Values match the existing src/lib/events.ts seed exactly (same
--- slug, same lock instant) — this migration relocates the value, it
+-- slug, same lock instant) â€” this migration relocates the value, it
 -- does not change it.
 insert into events (
   slug,
@@ -60,7 +60,7 @@ values (
   'upcoming',
   '2026-11-24',
   true,
-  'José Miguel Agrelot Coliseum, San Juan, Puerto Rico',
+  'JosÃ© Miguel Agrelot Coliseum, San Juan, Puerto Rico',
   null,
   '2026-11-24T00:00:00Z'
 )
@@ -69,7 +69,7 @@ set
   prediction_open_at = excluded.prediction_open_at,
   prediction_lock_at = excluded.prediction_lock_at;
 -- Deliberately only prediction_open_at/prediction_lock_at are
--- overwritten on conflict — if a row already exists with different
+-- overwritten on conflict â€” if a row already exists with different
 -- name/subtitle/status (e.g. a founder edited it manually), this
 -- migration must not clobber that. Lock config is the only thing
 -- 0.3A needs to be authoritative in the database.

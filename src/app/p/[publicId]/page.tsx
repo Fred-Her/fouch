@@ -1,11 +1,13 @@
-﻿﻿﻿import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CountryFlag } from "@/components/CountryFlag";
 import { siteUrl } from "@/lib/site";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
+import { getParticipantsForEvent } from "@/lib/participants";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { getOfficialResult } from "@/lib/results-db";
+import { formatContestantListUpdated } from "@/lib/event-time-display";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
 import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
 import { FouchScore } from "@/components/scoring/FouchScore";
@@ -21,15 +23,15 @@ export async function generateMetadata({
   if (!record) return {};
 
   const title = record.prediction.nickname
-    ? `${record.prediction.nickname}'s Top 10 — ${record.event.name}`
-    : `A Top 10 prediction — ${record.event.name}`;
+    ? `${record.prediction.nickname}'s Top 10 â€” ${record.event.name}`
+    : `A Top 10 prediction â€” ${record.event.name}`;
   const description = "See the prediction, then make your own call.";
 
   return {
     title,
     description,
     // Sprint 2 decision: public prediction pages are reachable via
-    // link but intentionally not indexed — we don't want thousands of
+    // link but intentionally not indexed â€” we don't want thousands of
     // thin user-generated pages in search results. `follow` so the
     // "Make your Top 10" CTA is still crawlable back to the real
     // product pages.
@@ -60,8 +62,8 @@ export default async function PublicPredictionPage({
   const { prediction, event, rankedParticipants } = record;
   const heading = prediction.nickname ? `${prediction.nickname}'s Top 10` : "Someone's Top 10";
 
-  // Cheap existence check only (no percentile/breakdown work) — used
-  // purely to decide share-CTA hierarchy (Sprint 4.1 §7-8). FouchScore
+  // Cheap existence check only (no percentile/breakdown work) â€” used
+  // purely to decide share-CTA hierarchy (Sprint 4.1 Â§7-8). FouchScore
   // below independently does the full scored computation; this is a
   // second, lightweight read of the same result row, not duplicated
   // scoring logic.
@@ -69,12 +71,19 @@ export default async function PublicPredictionPage({
   const hasResult = Boolean(official);
 
   // FOUCH 0.3A: editing is offered only for a verified prediction
-  // while the event is still open — fetched fresh on every page view
+  // while the event is still open â€” fetched fresh on every page view
   // from the single authoritative source, never cached/assumed.
   const lockConfig = await getEventLockConfig(event.slug);
   const isPredictionOpen = isPredictionWindowOpen(lockConfig, Date.now());
   const canEdit = prediction.hasVerifiedOwner && isPredictionOpen;
   const showLockedNotice = prediction.hasVerifiedOwner && !isPredictionOpen;
+
+  // FOUCH 0.3B Â§13: "Contestant list updated {date}" for a real,
+  // non-demo event with verified-roster provenance â€” never "Demo
+  // prediction" for one of these. Null (no participant rows checked
+  // yet, or a hardcoded/demo event) simply shows nothing extra here.
+  const participantData = await getParticipantsForEvent(event.slug);
+  const sourceCheckedAt = participantData?.sourceCheckedAt ?? null;
 
   return (
     <main className="mx-auto max-w-content px-6 py-8">
@@ -93,7 +102,11 @@ export default async function PublicPredictionPage({
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo prediction — not the official lineup
+          Demo prediction â€” not the official lineup
+        </p>
+      ) : sourceCheckedAt ? (
+        <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
+          {formatContestantListUpdated(sourceCheckedAt)}
         </p>
       ) : null}
 

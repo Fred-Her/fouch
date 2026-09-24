@@ -1,25 +1,25 @@
-﻿﻿﻿import { notFound, redirect } from "next/navigation";
+﻿import { notFound, redirect } from "next/navigation";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { EditPredictionFlow } from "@/components/prediction/EditPredictionFlow";
 
 /**
- * FOUCH 0.3A — the edit entry point. This route is intentionally
+ * FOUCH 0.3A â€” the edit entry point. This route is intentionally
  * unreachable in a way that actually matters for two cases, checked
  * server-side (never just hidden in the UI, since a direct URL visit
  * bypasses any client-side hiding):
  *
- *  - legacy anonymous prediction (no verified owner) — there is no
+ *  - legacy anonymous prediction (no verified owner) â€” there is no
  *    identity to authorize an edit against, and this sprint adds no
  *    way to claim one, so editing is simply never offered;
- *  - the event has passed prediction_lock_at — editing closes at
+ *  - the event has passed prediction_lock_at â€” editing closes at
  *    lock, full stop.
  *
- * Both redirect back to the public page rather than 404 — the
+ * Both redirect back to the public page rather than 404 â€” the
  * prediction itself is real and viewable, only editing isn't
  * available. The actual SAVE action (verify-actions.ts) independently
- * re-checks both of these server-side again at save time — this
+ * re-checks both of these server-side again at save time â€” this
  * page's checks are only about whether to show the builder at all,
  * never the authorization boundary itself.
  */
@@ -43,7 +43,7 @@ export default async function EditPredictionPage({
     redirect(`/p/${publicId}`);
   }
 
-  const participantData = getParticipantsForEvent(event.slug);
+  const participantData = await getParticipantsForEvent(event.slug);
   if (!participantData) notFound();
 
   const requiredCount = Math.min(10, participantData.participants.length);
@@ -57,7 +57,7 @@ export default async function EditPredictionPage({
         eventSlug={event.slug}
         publicId={publicId}
         allParticipants={participantData.participants}
-        initialRankedParticipantIds={rankedParticipants.map((participant) => participant.id)}
+        initialRankedParticipants={rankedParticipants}
         requiredCount={requiredCount}
         expectedVersionNumber={prediction.currentVersionNumber}
         predictionLockAt={lockConfig?.predictionLockAt ?? null}

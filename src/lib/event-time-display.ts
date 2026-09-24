@@ -1,11 +1,11 @@
-﻿﻿/**
- * FOUCH 0.3A.1 — pure, DB-free display formatting for the prediction
+﻿/**
+ * FOUCH 0.3A.1 â€” pure, DB-free display formatting for the prediction
  * lock instant. Deliberately separate from prediction-lock-logic.ts:
  * that file decides WHETHER predictions are open (authorization,
  * server-time-only); this file only decides HOW to show an already-
  * decided instant to a human, in the event's own timezone rather than
  * the viewer's browser timezone (which is ambiguous for a worldwide
- * audience — see FOUCH 0.3A.1 brief §1).
+ * audience â€” see FOUCH 0.3A.1 brief Â§1).
  *
  * CRITICAL invariant this file must never violate: formatting a
  * timestamp for display must never change what instant it represents.
@@ -17,10 +17,10 @@
 
 /**
  * Derives a short, human-readable location label from an IANA
- * timezone identifier — the last path segment, underscores replaced
+ * timezone identifier â€” the last path segment, underscores replaced
  * with spaces. "America/Puerto_Rico" -> "Puerto Rico". This is a
  * generic, zero-configuration derivation (no new "location" field
- * needed) — good enough for the single-event scale this product is
+ * needed) â€” good enough for the single-event scale this product is
  * at; if it ever produces something awkward for a future event, that
  * event can be given a nicer label at that point, not preemptively
  * here.
@@ -31,15 +31,29 @@ export function deriveLocationLabel(timeZone: string): string {
 }
 
 /**
+ * FOUCH 0.3B Â§13 â€” "Contestant list updated {date}", the restrained
+ * replacement for "Demo prediction" on a real (non-demo) event whose
+ * roster has verified provenance. Deliberately date-only (no time/
+ * timezone) â€” this is about freshness of a roster list, not a
+ * lock-timing instant, so it doesn't need event-local precision.
+ */
+export function formatContestantListUpdated(sourceCheckedAtIso: string): string {
+  const formatted = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(
+    new Date(sourceCheckedAtIso),
+  );
+  return `Contestant list updated ${formatted}`;
+}
+
+/**
  * Formats an absolute instant (ISO 8601 string, e.g. from
  * `events.prediction_lock_at`) as an unambiguous, human-readable
- * string in the EVENT's own local timezone — never the viewer's
+ * string in the EVENT's own local timezone â€” never the viewer's
  * browser timezone. Always includes a timezone abbreviation/offset
  * (via Intl's `timeZoneName: "short"`) so the result is never a naked
- * "9:00 PM" with no context (brief §3).
+ * "9:00 PM" with no context (brief Â§3).
  *
  * When `timeZone` is null (event has none configured yet), falls back
- * to an explicit UTC-labeled rendering — still unambiguous, never a
+ * to an explicit UTC-labeled rendering â€” still unambiguous, never a
  * silently-assumed local time.
  */
 export function formatEventLocalLockTime(isoDateTime: string, timeZone: string | null): string {
@@ -59,7 +73,7 @@ export function formatEventLocalLockTime(isoDateTime: string, timeZone: string |
     parts = formatter.formatToParts(date);
   } catch {
     // An invalid/unrecognized IANA identifier should never crash the
-    // page — fall back to explicit UTC, still unambiguous.
+    // page â€” fall back to explicit UTC, still unambiguous.
     if (zoneForFormatting !== "UTC") return formatEventLocalLockTime(isoDateTime, null);
     throw new Error(`Unable to format date in UTC: ${isoDateTime}`);
   }

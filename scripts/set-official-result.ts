@@ -1,13 +1,13 @@
 ﻿/**
  * Enters (or replaces) the official result for an event, validated
  * before it's ever written. This is the "smallest practical way to
- * enter a result" per research/Sprint 4 §23 — no admin UI, run by
+ * enter a result" per research/Sprint 4 Â§23 â€” no admin UI, run by
  * hand from a trusted machine with the service-role key available.
  *
  * Usage:
  *   npx tsx scripts/set-official-result.ts
  *
- * To use a different result, edit RESULT below and rerun — the script
+ * To use a different result, edit RESULT below and rerun â€” the script
  * validates every participant ID before writing anything.
  *
  * SAFETY: this uses the service-role key directly, bypassing RLS.
@@ -18,7 +18,7 @@
  * "server-only" so it can never be imported from a Client Component
  * inside the Next.js app. That guard throws when run outside Next's
  * own build pipeline (e.g. via plain `tsx`), which is exactly this
- * script's situation — so this file deliberately does not import it.
+ * script's situation â€” so this file deliberately does not import it.
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, existsSync } from "node:fs";
@@ -28,7 +28,7 @@ import { getParticipantsForEvent } from "../src/lib/participants";
 import { validateOfficialResult } from "../src/lib/official-result-validation";
 import type { OfficialResultInput } from "../src/types/scoring";
 
-// Unlike Next.js, plain `tsx` does not load .env.local automatically —
+// Unlike Next.js, plain `tsx` does not load .env.local automatically â€”
 // so this script loads it itself, with no new dependency required.
 function loadEnvLocal() {
   const path = resolve(process.cwd(), ".env.local");
@@ -48,11 +48,11 @@ loadEnvLocal();
 const EVENT_SLUG = "miss-universe-2026";
 
 /**
- * FICTIONAL / DEMO RESULT — Miss Universe 2026 has not happened yet.
+ * FICTIONAL / DEMO RESULT â€” Miss Universe 2026 has not happened yet.
  * This is for development/testing only, matching the demo participant
  * dataset. Never presented as an official result in the product (the
  * public page and Result Card both read data_status and show a "Demo
- * result" label whenever this is used — see FouchScore.tsx).
+ * result" label whenever this is used â€” see FouchScore.tsx).
  */
 const DEMO_RESULT: OfficialResultInput = {
   winner: "demo-co", // Colombia
@@ -69,7 +69,7 @@ async function main() {
     process.exit(1);
   }
 
-  const participantData = getParticipantsForEvent(EVENT_SLUG);
+  const participantData = await getParticipantsForEvent(EVENT_SLUG);
   if (!participantData) {
     console.error(`No participants configured for: ${EVENT_SLUG}`);
     process.exit(1);
@@ -94,13 +94,13 @@ async function main() {
   const { error } = await supabase.from("event_results").upsert(
     {
       event_slug: EVENT_SLUG,
-      data_status: participantData.status, // "demo" today — never mixed with "verified"
+      data_status: participantData.status, // "demo" today â€” never mixed with "verified"
       winner_participant_id: DEMO_RESULT.winner,
       first_runner_up_participant_id: DEMO_RESULT.firstRunnerUp,
       second_runner_up_participant_id: DEMO_RESULT.secondRunnerUp,
       top5_extra_participant_ids: DEMO_RESULT.top5Extras,
       top10_extra_participant_ids: DEMO_RESULT.top10Extras,
-      source_note: "Development/demo fixture — not an official result.",
+      source_note: "Development/demo fixture â€” not an official result.",
       updated_at: new Date().toISOString(),
     },
     { onConflict: "event_slug,data_status" },

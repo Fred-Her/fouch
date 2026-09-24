@@ -1,4 +1,4 @@
-﻿﻿﻿"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,13 +19,13 @@ import { OtpStep } from "./OtpStep";
 type Step = "edit" | "email" | "otp";
 
 /**
- * FOUCH 0.3A — reuses the SAME ranking primitives as
+ * FOUCH 0.3A â€” reuses the SAME ranking primitives as
  * PredictionBuilder.tsx (TopTenList, ParticipantBrowser) and the SAME
- * verification primitives as ReviewContent.tsx (EmailStep, OtpStep) —
+ * verification primitives as ReviewContent.tsx (EmailStep, OtpStep) â€”
  * deliberately not a second, independent builder. The only real
  * difference from PredictionBuilder is persistence: this component's
  * ranking state starts from the prediction's CURRENT version (passed
- * in from the server) and is never written to localStorage — there is
+ * in from the server) and is never written to localStorage â€” there is
  * nothing "in progress" to resume here, only a specific saved
  * prediction being edited.
  */
@@ -33,7 +33,7 @@ export function EditPredictionFlow({
   eventSlug,
   publicId,
   allParticipants,
-  initialRankedParticipantIds,
+  initialRankedParticipants,
   requiredCount,
   expectedVersionNumber,
   predictionLockAt,
@@ -41,18 +41,26 @@ export function EditPredictionFlow({
 }: {
   eventSlug: string;
   publicId: string;
+  /** Only currently-selectable (ACTIVE) contestants â€” what
+   * ParticipantBrowser offers to pick from. */
   allParticipants: Participant[];
-  initialRankedParticipantIds: string[];
+  /** FOUCH 0.3B: the CURRENT ranking resolved regardless of status â€”
+   * may include a WITHDRAWN/REPLACED entry (isActive: false), which
+   * must still display with its real name so it can be seen and
+   * explicitly swapped out, never silently dropped from the list. */
+  initialRankedParticipants: Participant[];
   requiredCount: number;
   expectedVersionNumber: number;
   predictionLockAt: string | null;
-  /** FOUCH 0.3A.1 — IANA timezone identifier for the event, used only
+  /** FOUCH 0.3A.1 â€” IANA timezone identifier for the event, used only
    * for unambiguous display of predictionLockAt (see
    * event-time-display.ts). */
   predictionTimezone: string | null;
 }) {
   const router = useRouter();
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialRankedParticipantIds);
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    initialRankedParticipants.map((participant) => participant.id),
+  );
   const [step, setStep] = useState<Step>("edit");
 
   const [emailSubmitting, setEmailSubmitting] = useState(false);
@@ -64,13 +72,30 @@ export function EditPredictionFlow({
   const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
   const [accessTokenForRetry, setAccessTokenForRetry] = useState<string | null>(null);
 
-  const participantsById = new Map(allParticipants.map((participant) => [participant.id, participant]));
+  // FOUCH 0.3B: merges the selectable roster with whatever the
+  // current ranking already contains â€” this is what lets a
+  // WITHDRAWN/REPLACED entry the user hasn't removed yet keep
+  // resolving to its real name (isActive: false) instead of vanishing
+  // from the Top N the moment its status changed. ParticipantBrowser
+  // below still only ever offers `allParticipants` (active-only) to
+  // pick from, so a removed inactive entry can only be replaced by a
+  // currently-active contestant â€” never re-added.
+  const participantsById = new Map(
+    [...allParticipants, ...initialRankedParticipants].map((participant) => [participant.id, participant]),
+  );
 
   const rankedParticipants = selectedIds
     .map((id) => participantsById.get(id))
     .filter((participant): participant is Participant => Boolean(participant));
 
   const isComplete = selectedIds.length >= requiredCount;
+  // FOUCH 0.3B Â§7: a saved version can never include a participant
+  // who is no longer ACTIVE â€” checked client-side here purely to
+  // give an immediate, clear message instead of a round-trip to the
+  // server; validateSubmission enforces the same rule authoritatively
+  // regardless of this check (see verify-actions.ts's edit flow).
+  const hasUnavailableSelection = rankedParticipants.some((participant) => !participant.isActive);
+  const canSave = isComplete && !hasUnavailableSelection;
 
   function handleToggle(id: string) {
     setSelectedIds((current) => {
@@ -126,7 +151,7 @@ export function EditPredictionFlow({
     try {
       result = await startEmailVerification(targetEmail);
     } catch {
-      setEmailError("We couldn't send a code — try again in a moment.");
+      setEmailError("We couldn't send a code â€” try again in a moment.");
       setEmailSubmitting(false);
       return;
     }
@@ -177,7 +202,7 @@ export function EditPredictionFlow({
       });
     } catch {
       setOtpSubmitting(false);
-      setOtpError("We couldn't verify your code — try again.");
+      setOtpError("We couldn't verify your code â€” try again.");
       return;
     }
 
@@ -239,13 +264,21 @@ export function EditPredictionFlow({
             </div>
 
             {isComplete ? (
-              <button
-                type="button"
-                onClick={handleStartSave}
-                className="mt-6 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong sm:w-auto"
-              >
-                Save my Top {requiredCount}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleStartSave}
+                  disabled={!canSave}
+                  className="mt-6 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  Save my Top {requiredCount}
+                </button>
+                {hasUnavailableSelection ? (
+                  <p className="mt-2 text-xs text-text-muted">
+                    Replace the contestant marked &quot;Replace&quot; with a current one to save your changes.
+                  </p>
+                ) : null}
+              </>
             ) : null}
           </section>
 
@@ -280,7 +313,7 @@ export function EditPredictionFlow({
             onClick={handleRetry}
             className="mt-4 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
-            {otpSubmitting ? "Trying again…" : "Try again"}
+            {otpSubmitting ? "Trying againâ€¦" : "Try again"}
           </button>
         </div>
       ) : step === "otp" ? (

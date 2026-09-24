@@ -1,4 +1,4 @@
-﻿﻿"use server";
+﻿"use server";
 
 import { getEventBySlug } from "@/lib/events";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
@@ -17,7 +17,7 @@ import { normalizeEmail, isValidEmail } from "@/lib/email-validation";
 import { getSupabaseAuthClient } from "@/lib/supabase/auth-client";
 
 /**
- * Beta Hardening 0.2 Phase C — the verified-lock flow.
+ * Beta Hardening 0.2 Phase C â€” the verified-lock flow.
  *
  * GATE 1 + GATE 2 CLOSED: this file is wired into ReviewContent.tsx's
  * real Lock button, and the old `predictions_event_device_unique`
@@ -32,7 +32,7 @@ export type StartVerificationResult = { success: true } | { success: false; erro
 /**
  * Requests an OTP for the given email. Never reveals whether the
  * email already exists as a user, or already has a prediction for
- * this event — that check only happens AFTER verification succeeds
+ * this event â€” that check only happens AFTER verification succeeds
  * (see verifyEmailAndLockPrediction), specifically to avoid an
  * email-enumeration leak at this earlier, unauthenticated step.
  */
@@ -44,7 +44,7 @@ export async function startEmailVerification(email: string): Promise<StartVerifi
 
   const supabase = getSupabaseAuthClient();
   if (!supabase) {
-    return { success: false, error: "Verification isn't available right now — try again shortly." };
+    return { success: false, error: "Verification isn't available right now â€” try again shortly." };
   }
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -54,10 +54,10 @@ export async function startEmailVerification(email: string): Promise<StartVerifi
 
   if (error) {
     // Supabase's own message here is already safe/generic (rate-limit,
-    // transient failure) — never surface raw error internals, but no
+    // transient failure) â€” never surface raw error internals, but no
     // need to further genericize what Supabase itself already returns
     // as a user-facing string.
-    return { success: false, error: "We couldn't send a code — try again in a moment." };
+    return { success: false, error: "We couldn't send a code â€” try again in a moment." };
   }
 
   return { success: true };
@@ -85,13 +85,13 @@ export type VerifyAndLockResult =
       error: string;
       failureReason: VerifyAndLockFailureReason;
       /** Present only when OTP verification itself succeeded but the
-       * insert failed transiently — lets the client retry the lock
+       * insert failed transiently â€” lets the client retry the lock
        * step alone, without a new OTP (frozen retry semantics). */
       accessToken?: string;
     };
 
 /** Shared by verifyEmailAndLockPrediction and retryLockWithVerifiedSession
- * — re-validates the entire payload server-side (never weaker than the
+ * â€” re-validates the entire payload server-side (never weaker than the
  * existing anonymous submitPrediction() path) and attempts the insert
  * with the now-known auth_user_id. */
 async function validateAndLock(
@@ -103,7 +103,7 @@ async function validateAndLock(
     return { success: false, error: "This event doesn't exist.", failureReason: "validation_failed" };
   }
 
-  const participantData = getParticipantsForEvent(payload.eventSlug);
+  const participantData = await getParticipantsForEvent(payload.eventSlug);
   if (!participantData) {
     return {
       success: false,
@@ -115,7 +115,7 @@ async function validateAndLock(
   const requiredCount = Math.min(10, participantData.participants.length);
 
   // FOUCH 0.3A: fetched fresh on every lock/edit attempt from
-  // Supabase, the single authoritative source — never from
+  // Supabase, the single authoritative source â€” never from
   // src/lib/events.ts, never from anything the client supplies.
   const lockConfig = await getEventLockConfig(payload.eventSlug);
 
@@ -135,7 +135,7 @@ async function validateAndLock(
     return { success: false, error: "Missing device token.", failureReason: "validation_failed" };
   }
 
-  // Soft signal only — computed BEFORE the insert (so it reflects
+  // Soft signal only â€” computed BEFORE the insert (so it reflects
   // whoever already holds this device, if anyone), never blocks.
   const existingOnDevice = await getDeviceTokenIdentity(payload.eventSlug, payload.deviceToken);
   const duplicateDeviceSignal = isDeviceIdentityMismatch(existingOnDevice, {
@@ -157,7 +157,7 @@ async function validateAndLock(
   } catch {
     return {
       success: false,
-      error: "We couldn't lock your prediction. Your Top 10 is still saved — try again.",
+      error: "We couldn't lock your prediction. Your Top 10 is still saved â€” try again.",
       failureReason: "insert_failed",
     };
   }
@@ -172,7 +172,7 @@ async function validateAndLock(
 /**
  * The main verified-lock entry point: verifies the OTP, then
  * immediately attempts the lock as the next step in the same
- * user-facing action — sequential, not one shared database
+ * user-facing action â€” sequential, not one shared database
  * transaction (see FOUCH_IDENTITY_ARCHITECTURE.md).
  */
 export async function verifyEmailAndLockPrediction(
@@ -186,7 +186,7 @@ export async function verifyEmailAndLockPrediction(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now — try again shortly.",
+      error: "Verification isn't available right now â€” try again shortly.",
       failureReason: "invalid_code",
     };
   }
@@ -223,7 +223,7 @@ export async function verifyEmailAndLockPrediction(
 /**
  * Retries only the lock step after a transient insert failure,
  * reusing the access token obtained during the original OTP
- * verification — never requires a new code, per the frozen retry
+ * verification â€” never requires a new code, per the frozen retry
  * semantics. Validates the token server-side via Supabase Auth itself
  * (getUser) rather than trusting anything the client asserts.
  */
@@ -235,7 +235,7 @@ export async function retryLockWithVerifiedSession(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now — try again shortly.",
+      error: "Verification isn't available right now â€” try again shortly.",
       failureReason: "session_expired",
     };
   }
@@ -245,7 +245,7 @@ export async function retryLockWithVerifiedSession(
   if (error || !data.user) {
     return {
       success: false,
-      error: "Your verification expired — please request a new code.",
+      error: "Your verification expired â€” please request a new code.",
       failureReason: "session_expired",
     };
   }
@@ -260,21 +260,21 @@ export async function retryLockWithVerifiedSession(
 }
 
 /* ------------------------------------------------------------------
- * FOUCH 0.3A — Editable Predictions.
+ * FOUCH 0.3A â€” Editable Predictions.
  *
  * Deliberately mirrors the Lock flow above almost exactly: same
- * email → OTP → verify shape, same accessToken-based retry-without-
+ * email â†’ OTP â†’ verify shape, same accessToken-based retry-without-
  * new-code semantics, because the identity architecture is frozen
- * (Beta Hardening 0.2 rules are unchanged, see brief §3). The only
+ * (Beta Hardening 0.2 rules are unchanged, see brief Â§3). The only
  * new thing editing needs on top of that is OWNERSHIP authorization
- * — see validateAndEdit below.
+ * â€” see validateAndEdit below.
  *
  * Legacy scope (explicit product decision, not inferred): a
  * prediction with auth_user_id = null has no verified identity to
  * authorize an edit against, and this sprint introduces no mechanism
  * to retroactively claim one via nickname, device_token, a
  * later-entered email, public_id, or anything else. Such predictions
- * remain fully public/readable/scoreable forever, exactly as today —
+ * remain fully public/readable/scoreable forever, exactly as today â€”
  * they are simply never editable. The UI never even offers "EDIT MY
  * TOP 10" for them (see PublicPredictionPage), but the server check
  * below is the actual authorization boundary, not the UI.
@@ -284,7 +284,7 @@ export interface EditPredictionPayload {
   publicId: string;
   participantIds: string[];
   /** The version_number the client read just before opening the edit
-   * builder — used as an optimistic-concurrency check, see
+   * builder â€” used as an optimistic-concurrency check, see
    * createPredictionVersion() in predictions-db.ts. */
   expectedVersionNumber: number;
 }
@@ -307,9 +307,9 @@ export type VerifyAndEditResult =
       error: string;
       failureReason: VerifyAndEditFailureReason;
       /** Present only when OTP verification itself succeeded but the
-       * save step failed transiently — lets the client retry the save
+       * save step failed transiently â€” lets the client retry the save
        * step alone, without a new OTP (same frozen retry semantics as
-       * the lock flow). Never present for not_owner/locked/conflict —
+       * the lock flow). Never present for not_owner/locked/conflict â€”
        * those are never worth retrying with the same input. */
       accessToken?: string;
     };
@@ -317,7 +317,7 @@ export type VerifyAndEditResult =
 /**
  * Shared by verifyEmailAndEditPrediction and
  * retryEditWithVerifiedSession. Every authorization and timing check
- * here is independent server-side state — nothing the client supplies
+ * here is independent server-side state â€” nothing the client supplies
  * (publicId aside, which only selects WHICH prediction, never
  * authorizes anything on its own) is trusted for identity or timing.
  */
@@ -330,11 +330,11 @@ async function validateAndEdit(
     return { success: false, error: "We couldn't find that prediction.", failureReason: "not_found" };
   }
 
-  // The critical authorization check (brief §10-11, reconfirmed for
+  // The critical authorization check (brief Â§10-11, reconfirmed for
   // legacy scope): the verified auth_user_id from THIS session must
   // match the prediction's stored auth_user_id exactly. See
   // isAuthorizedToEdit's own doc for why this single, pure check is
-  // the entire ownership rule — no nickname/device_token/public_id/
+  // the entire ownership rule â€” no nickname/device_token/public_id/
   // email-based claiming exists anywhere in this codebase.
   if (!isAuthorizedToEdit(editable.authUserId, authUserId)) {
     return {
@@ -349,7 +349,7 @@ async function validateAndEdit(
     return { success: false, error: "This event doesn't exist.", failureReason: "validation_failed" };
   }
 
-  const participantData = getParticipantsForEvent(editable.eventSlug);
+  const participantData = await getParticipantsForEvent(editable.eventSlug);
   if (!participantData) {
     return {
       success: false,
@@ -360,7 +360,7 @@ async function validateAndEdit(
 
   const requiredCount = Math.min(10, participantData.participants.length);
 
-  // Re-fetched fresh, right now, from Supabase — the one and only
+  // Re-fetched fresh, right now, from Supabase â€” the one and only
   // authoritative source. Never trust that the event was still open
   // when the edit page loaded; only whether it's open THIS instant.
   const lockConfig = await getEventLockConfig(editable.eventSlug);
@@ -395,7 +395,7 @@ async function validateAndEdit(
   } catch {
     return {
       success: false,
-      error: "We couldn't save your changes. Your Top 10 is still what it was — try again.",
+      error: "We couldn't save your changes. Your Top 10 is still what it was â€” try again.",
       failureReason: "edit_failed",
     };
   }
@@ -416,7 +416,7 @@ async function validateAndEdit(
 }
 
 /**
- * The main verified-edit entry point — verifies the OTP, then
+ * The main verified-edit entry point â€” verifies the OTP, then
  * immediately attempts the edit as the next step in the same
  * user-facing action, exactly mirroring verifyEmailAndLockPrediction.
  */
@@ -431,7 +431,7 @@ export async function verifyEmailAndEditPrediction(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now — try again shortly.",
+      error: "Verification isn't available right now â€” try again shortly.",
       failureReason: "invalid_code",
     };
   }
@@ -458,7 +458,7 @@ export async function verifyEmailAndEditPrediction(
 
   // Only offer a no-new-OTP retry when verification itself succeeded
   // (we have a real session) but the SAVE step is what failed
-  // transiently — never for not_owner/locked/conflict/validation,
+  // transiently â€” never for not_owner/locked/conflict/validation,
   // none of which a bare retry with the same input would fix.
   if (!result.success && result.failureReason === "edit_failed" && data.session) {
     return { ...result, accessToken: data.session.access_token };
@@ -469,7 +469,7 @@ export async function verifyEmailAndEditPrediction(
 
 /**
  * Retries only the save step after a transient failure, reusing the
- * access token from the original OTP verification — mirrors
+ * access token from the original OTP verification â€” mirrors
  * retryLockWithVerifiedSession exactly.
  */
 export async function retryEditWithVerifiedSession(
@@ -480,7 +480,7 @@ export async function retryEditWithVerifiedSession(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now — try again shortly.",
+      error: "Verification isn't available right now â€” try again shortly.",
       failureReason: "session_expired",
     };
   }
@@ -490,7 +490,7 @@ export async function retryEditWithVerifiedSession(
   if (error || !data.user) {
     return {
       success: false,
-      error: "Your verification expired — please request a new code.",
+      error: "Your verification expired â€” please request a new code.",
       failureReason: "session_expired",
     };
   }

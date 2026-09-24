@@ -39,6 +39,14 @@ export function TopTenList({
           <span className="flex-1 truncate text-sm text-text-primary">
             {participant.displayName}
           </span>
+          {!participant.isActive ? (
+            <span
+              className="shrink-0 rounded border border-accent-strong px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-accent-strong"
+              title="No longer available â€” remove and pick a current contestant to save changes."
+            >
+              Replace
+            </span>
+          ) : null}
 
           <div className="flex items-center gap-0.5">
             <button

@@ -1,8 +1,8 @@
-﻿﻿import "server-only";
+﻿import "server-only";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { generatePublicId } from "@/lib/public-id";
 import { getEventBySlug } from "@/lib/events";
-import { getParticipantsForEvent, type ParticipantDataStatus } from "@/lib/participants";
+import { resolveParticipantsByIds, type ParticipantDataStatus } from "@/lib/participants";
 import { classifyInsertConflict } from "@/lib/insert-conflict";
 import { isRankingUnchanged } from "@/lib/prediction-version-logic";
 import type { FouchEvent } from "@/types/event";
@@ -10,7 +10,7 @@ import type { Participant } from "@/types/participant";
 import type { EligiblePrediction } from "@/lib/community-comparison";
 
 export interface PredictionRecord {
-  /** Internal DB id — server-side use only (e.g. self-exclusion from
+  /** Internal DB id â€” server-side use only (e.g. self-exclusion from
    * community comparisons). Never send this to the client. */
   id: string;
   publicId: string;
@@ -21,13 +21,13 @@ export interface PredictionRecord {
   submittedAt: string;
   /** FOUCH 0.3A: whether this prediction has a verified owner. Only
    * ever used server-side to decide whether to offer "EDIT MY TOP
-   * 10" — never exposed as a raw auth_user_id to the client (see
+   * 10" â€” never exposed as a raw auth_user_id to the client (see
    * predictions_public, which still never selects auth_user_id). */
   hasVerifiedOwner: boolean;
-  /** FOUCH 0.3A: version_number of the current version — needed by
+  /** FOUCH 0.3A: version_number of the current version â€” needed by
    * the edit flow as the optimistic-concurrency baseline. */
   currentVersionNumber: number;
-  /** Participant IDs in ranked order — index 0 is position #1. */
+  /** Participant IDs in ranked order â€” index 0 is position #1. */
   rankedParticipantIds: string[];
 }
 
@@ -38,10 +38,10 @@ interface InsertPredictionParams {
   countryCode: string | null;
   dataStatus: ParticipantDataStatus;
   deviceToken: string;
-  /** Beta Hardening 0.2 Phase C — set only by the new verified-lock
+  /** Beta Hardening 0.2 Phase C â€” set only by the new verified-lock
    * path. Undefined/omitted preserves the exact pre-Phase-C anonymous
    * insert behavior (legacy predictions are never retroactively
-   * touched — see FOUCH_IDENTITY_ARCHITECTURE.md). */
+   * touched â€” see FOUCH_IDENTITY_ARCHITECTURE.md). */
   authUserId?: string;
 }
 
@@ -57,7 +57,7 @@ export async function insertPrediction(
 ): Promise<InsertPredictionResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { success: false, error: "Submissions aren't available yet — the database isn't configured." };
+    return { success: false, error: "Submissions aren't available yet â€” the database isn't configured." };
   }
 
   for (let attempt = 0; attempt < MAX_PUBLIC_ID_ATTEMPTS; attempt++) {
@@ -82,10 +82,10 @@ export async function insertPrediction(
       // entropy) but retrying costs nothing. A conflict on the
       // identity index (Phase C) or the legacy device index both mean
       // "this identity/device already has a prediction for this
-      // event" — treat either as success and hand back the existing
+      // event" â€” treat either as success and hand back the existing
       // one, so a double-tap, a race, or a retry never looks like a
       // hard failure. See insert-conflict.ts for why the message is
-      // classified rather than just checked for "public_id" — Phase C
+      // classified rather than just checked for "public_id" â€” Phase C
       // adds a second possible unique constraint to distinguish.
       if (insertError.code === UNIQUE_VIOLATION) {
         const conflict = classifyInsertConflict(insertError.message);
@@ -110,7 +110,7 @@ export async function insertPrediction(
     }
 
     // FOUCH 0.3A: every prediction, including a first-time submission,
-    // is now version 1 of its versioned history — not a special case.
+    // is now version 1 of its versioned history â€” not a special case.
     // See createPredictionVersion() below for the same shape used by
     // every later edit.
     const { data: version, error: versionError } = await supabase
@@ -134,7 +134,7 @@ export async function insertPrediction(
     const { error: itemsError } = await supabase.from("prediction_items").insert(items);
 
     if (itemsError) {
-      // Compensating cleanup — Supabase's JS client has no
+      // Compensating cleanup â€” Supabase's JS client has no
       // multi-statement transaction here, so we manually undo the
       // parent rows rather than leave an incomplete prediction behind.
       // Deleting `predictions` cascades to `prediction_versions`
@@ -164,10 +164,10 @@ export interface EditablePrediction {
   publicId: string;
   eventSlug: string;
   authUserId: string | null;
-  /** Highest version_number that exists for this prediction — the
+  /** Highest version_number that exists for this prediction â€” the
    * next successful edit is version_number = latestVersionNumber + 1. */
   latestVersionNumber: number;
-  /** Participant IDs of the CURRENT version, in ranked order — used
+  /** Participant IDs of the CURRENT version, in ranked order â€” used
    * to pre-fill the edit builder. */
   currentRankedParticipantIds: string[];
 }
@@ -177,7 +177,7 @@ export interface EditablePrediction {
  * who owns this prediction (by auth_user_id, never anything the
  * client supplies) and what its current ranking/version number are.
  * Returns null if the prediction, its current version, or its items
- * can't be resolved — callers must treat that as "can't edit", never
+ * can't be resolved â€” callers must treat that as "can't edit", never
  * as "treat as new".
  */
 export async function getPredictionForEdit(publicId: string): Promise<EditablePrediction | null> {
@@ -224,12 +224,12 @@ export type CreateVersionResult =
 /**
  * Creates a new immutable version for an EXISTING logical prediction
  * and makes it current. Never touches public_id, never creates a new
- * `predictions` row — this is exclusively the "edit" path; first
+ * `predictions` row â€” this is exclusively the "edit" path; first
  * submissions go through insertPrediction() above.
  *
- * Idempotency (brief §19): if the submitted ranking is identical to
+ * Idempotency (brief Â§19): if the submitted ranking is identical to
  * the prediction's current version, this is a no-op that returns
- * success without creating a new version — the simplest robust
+ * success without creating a new version â€” the simplest robust
  * defense against a double-click or a network retry re-sending the
  * exact same edit, with no client-supplied idempotency key needed.
  * A retry that lands after a lost response looks identical to the
@@ -238,7 +238,7 @@ export type CreateVersionResult =
  * Concurrency: `expectedVersionNumber` must match the version number
  * the caller read just before presenting the edit form. A mismatch
  * means someone else's edit (or this same edit, retried, but no
- * longer the current version) landed first — reported as a
+ * longer the current version) landed first â€” reported as a
  * conflict rather than silently overwritten, satisfying "a retry
  * must not accidentally create uncontrolled duplicate versions" from
  * the other direction (never silently stack two edits based on a
@@ -252,7 +252,7 @@ export async function createPredictionVersion(params: {
 }): Promise<CreateVersionResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { success: false, error: "Editing isn't available right now — the database isn't configured." };
+    return { success: false, error: "Editing isn't available right now â€” the database isn't configured." };
   }
 
   const isUnchanged = isRankingUnchanged(params.currentRankedParticipantIds, params.participantIds);
@@ -277,7 +277,7 @@ export async function createPredictionVersion(params: {
   }
 
   // Re-check the expected version number against the DB row we just
-  // read, not the one the caller assumed — closes the gap between
+  // read, not the one the caller assumed â€” closes the gap between
   // "the page loaded the current ranking" and "the save request
   // actually landed", per the concurrency note above.
   const { data: currentVersionRow, error: currentVersionRowError } = await supabase
@@ -293,7 +293,7 @@ export async function createPredictionVersion(params: {
   if (currentVersionRow.version_number !== params.expectedVersionNumber) {
     return {
       success: false,
-      error: "Your prediction changed elsewhere since you opened this — please reload and try again.",
+      error: "Your prediction changed elsewhere since you opened this â€” please reload and try again.",
     };
   }
 
@@ -308,11 +308,11 @@ export async function createPredictionVersion(params: {
   if (versionError || !newVersion) {
     // A unique-violation on (prediction_id, version_number) here means
     // a concurrent edit already claimed this exact next version number
-    // — report as a conflict rather than silently retrying with a
+    // â€” report as a conflict rather than silently retrying with a
     // higher number, which could race indefinitely under contention.
     return {
       success: false,
-      error: "Your prediction changed elsewhere since you opened this — please reload and try again.",
+      error: "Your prediction changed elsewhere since you opened this â€” please reload and try again.",
     };
   }
 
@@ -374,7 +374,7 @@ export async function getPredictionByPublicId(publicId: string): Promise<Predict
 
   if (currentVersionError || !currentVersion) return null;
 
-  // FOUCH 0.3A: always the CURRENT version's items — never every
+  // FOUCH 0.3A: always the CURRENT version's items â€” never every
   // version ever saved. This is the one place every public-facing
   // read of "this prediction's ranking" ultimately goes through.
   const { data: items, error: itemsError } = await supabase
@@ -419,7 +419,7 @@ export async function getPredictionByDeviceToken(
 }
 
 /**
- * Beta Hardening 0.2 Phase C — looks up an existing FINAL prediction
+ * Beta Hardening 0.2 Phase C â€” looks up an existing FINAL prediction
  * by verified identity, the same shape as getPredictionByDeviceToken
  * above, used for the identity unique-constraint conflict path.
  */
@@ -444,10 +444,10 @@ export async function getPredictionByAuthUserId(
 }
 
 /**
- * Beta Hardening 0.2 Phase C — feeds the soft, non-blocking
+ * Beta Hardening 0.2 Phase C â€” feeds the soft, non-blocking
  * same-device/different-identity signal (see insert-conflict.ts's
  * isDeviceIdentityMismatch). Returns only the two fields that
- * function needs — never a full PredictionRecord, since this is
+ * function needs â€” never a full PredictionRecord, since this is
  * purely an internal analytics signal, not a user-facing lookup.
  */
 export async function getDeviceTokenIdentity(
@@ -488,12 +488,13 @@ export async function getPredictionWithParticipants(publicId: string): Promise<{
   const event = getEventBySlug(prediction.eventSlug);
   if (!event) return null;
 
-  const participantData = getParticipantsForEvent(prediction.eventSlug);
-  if (!participantData) return null;
-
-  const participantsById = new Map(
-    participantData.participants.map((participant) => [participant.id, participant]),
-  );
+  // FOUCH 0.3B: resolves by id regardless of current status â€” a
+  // participant who has since become WITHDRAWN/REPLACED must still
+  // render here with their real name/country. Using the active-only
+  // getParticipantsForEvent here would silently drop such an entry
+  // (or, worse, fail the length check below and 404 the whole public
+  // prediction) the moment their status changed after the fact.
+  const participantsById = await resolveParticipantsByIds(prediction.eventSlug, prediction.rankedParticipantIds);
 
   const rankedParticipants = prediction.rankedParticipantIds
     .map((id) => participantsById.get(id))
@@ -506,13 +507,13 @@ export async function getPredictionWithParticipants(publicId: string): Promise<{
 
 /**
  * Fetches every ranked-ID list eligible for comparison against a given
- * event + data-status — the raw material for community-comparison.ts.
+ * event + data-status â€” the raw material for community-comparison.ts.
  * Only `id` and `participant_id`/`predicted_position` are selected;
  * nickname, country, and device_token never leave the database for
  * this purpose (see Sprint 3 brief section 22, privacy).
  *
  * "Eligible" here means: same event, same data_status (demo
- * predictions and future verified predictions never mix — see
+ * predictions and future verified predictions never mix â€” see
  * section 9), and exactly 10 items. A prediction with a corrupted or
  * incomplete item set is silently excluded rather than crashing the
  * comparison.
@@ -526,9 +527,9 @@ export async function getEligiblePredictionsForComparison(
 
   // FOUCH 0.3A: `id` here is the logical prediction's key used only to
   // group items below; `current_version_id` is what actually scopes
-  // which items count — a prediction with 3 saved versions must still
+  // which items count â€” a prediction with 3 saved versions must still
   // contribute exactly ONE eligible ranking (its current one), never
-  // three (brief §12: "Freddy has v1, v2, v3 → community sample size
+  // three (brief Â§12: "Freddy has v1, v2, v3 â†’ community sample size
   // is 1 prediction, not 3").
   const { data: predictions, error } = await supabase
     .from("predictions")
@@ -580,7 +581,7 @@ export interface LeaderboardRawEntry {
 
 /**
  * Same eligibility filters as getEligiblePredictionsForComparison
- * (event + data_status + is_final=true + exactly 10 items) — kept as a
+ * (event + data_status + is_final=true + exactly 10 items) â€” kept as a
  * near-identical second query, deliberately, rather than reusing that
  * function directly: that function's contract explicitly promises to
  * never select nickname/country (see its comment) so it stays safe to
@@ -596,9 +597,9 @@ export async function getLeaderboardRawEntries(
   if (!supabase) return [];
 
   // FOUCH 0.3A: same current-version-only scoping as
-  // getEligiblePredictionsForComparison above — a prediction with
+  // getEligiblePredictionsForComparison above â€” a prediction with
   // several saved versions is still exactly one leaderboard entry
-  // (brief §13), never one entry per version.
+  // (brief Â§13), never one entry per version.
   const { data: predictions, error } = await supabase
     .from("predictions")
     .select("id, public_id, nickname, country_code, current_version_id")
@@ -644,16 +645,16 @@ export async function getLeaderboardRawEntries(
 }
 
 /**
- * Experiment 01 ("Your Crowd Changed") — the leanest possible query for
+ * Experiment 01 ("Your Crowd Changed") â€” the leanest possible query for
  * this experiment: only each eligible prediction's submission time and
  * #1 (winner) pick, never the full 10-item ranking. Deliberately a
  * separate query rather than reusing getEligiblePredictionsForComparison
- * or getLeaderboardRawEntries — those fetch every item of every
+ * or getLeaderboardRawEntries â€” those fetch every item of every
  * prediction, which this experiment doesn't need at all.
  *
  * Eligibility mirrors both of those functions exactly: same event_slug,
  * same data_status, is_final = true, and (checked via the items query)
- * exactly 10 items — never a different population definition for the
+ * exactly 10 items â€” never a different population definition for the
  * same underlying concept of "an eligible prediction."
  */
 export async function getWinnerPicksForConsensusChange(
@@ -665,9 +666,9 @@ export async function getWinnerPicksForConsensusChange(
 
   // FOUCH 0.3A: `submitted_at` remains the prediction's ORIGINAL
   // submission time (predictions.submitted_at is never touched by an
-  // edit — only prediction_versions.created_at records when each
+  // edit â€” only prediction_versions.created_at records when each
   // version was saved). Experiment 01's semantics with an edited
-  // winner pick are addressed separately below (brief §17) — this
+  // winner pick are addressed separately below (brief Â§17) â€” this
   // function's contract (submission time + CURRENT winner pick) is
   // unchanged here on purpose.
   const { data: predictions, error } = await supabase
@@ -682,7 +683,7 @@ export async function getWinnerPicksForConsensusChange(
 
   const versionIds = predictions.map((p) => p.current_version_id as string);
 
-  // Only position 1 (the winner pick) — and only from predictions with
+  // Only position 1 (the winner pick) â€” and only from predictions with
   // exactly 10 items, so a malformed/partial prediction never counts as
   // an eligible "winner pick" here either.
   const { data: allItems, error: itemsError } = await supabase
