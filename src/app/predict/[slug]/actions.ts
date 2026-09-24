@@ -21,7 +21,7 @@ export type SubmitPredictionResult =
 export async function submitPrediction(
   input: SubmitPredictionInput,
 ): Promise<SubmitPredictionResult> {
-  const event = getEventBySlug(input.eventSlug);
+  const event = await getEventBySlug(input.eventSlug);
   if (!event) {
     return { success: false, error: "This event doesn't exist." };
   }

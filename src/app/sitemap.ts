@@ -2,7 +2,7 @@
 import { getFeaturedEvent } from "@/lib/events";
 import { siteUrl } from "@/lib/site";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
     {
       url: siteUrl,
@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const featuredEvent = getFeaturedEvent();
+  const featuredEvent = await getFeaturedEvent();
   if (featuredEvent) {
     entries.push({
       url: `${siteUrl}/predict/${featuredEvent.slug}`,

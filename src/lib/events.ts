@@ -1,39 +1,33 @@
-﻿﻿import type { FouchEvent } from "@/types/event";
+﻿import "server-only";
+import type { FouchEvent } from "@/types/event";
+import { getEventBySlugFromDb, getFeaturedEventFromDb } from "@/lib/events-db";
 
 /**
- * SEED DATA — Sprint 0.
+ * FOUCH 0.3B Event Resolution Fix — `events` in Supabase is now the
+ * single source of truth for event metadata, replacing the
+ * hardcoded array that used to live here. This file used to define
+ * Miss Universe 2026 directly in TypeScript; that row already exists
+ * in the database (seeded since migration 0001/0007) with every field
+ * this file used to hardcode, so switching this file to read from
+ * there loses nothing for Miss Universe and is what let Miss Grand
+ * International 2026 — added straight to the database in 0.3B —
+ * resolve correctly for the first time (previously getEventBySlug
+ * returned null for it, since it was never added to this array,
+ * which meant its /predict route 404'd and it could never become the
+ * Home's featured event no matter what the database's own
+ * `is_featured` column said).
  *
- * This is real, verifiable public information (event name, date, venue),
- * not a database yet. There are no participant counts, popularity
- * numbers, or "trending" claims here — Fouch does not fabricate social
- * proof. Once Supabase is wired up (see src/lib/supabase), this file's
- * shape becomes the seed for the `events` table and this function can
- * be swapped for a real query without touching the components that
- * consume it.
+ * Both exports are now async — every existing caller already ran
+ * inside an async Server Component or Server Action, so this is a
+ * mechanical `await` addition at each call site, not a behavior
+ * change.
  */
-const events: FouchEvent[] = [
-  {
-    id: "seed-miss-universe-2026",
-    slug: "miss-universe-2026",
-    name: "Miss Universe 2026",
-    category: "pageant",
-    status: "upcoming",
-    eventDate: "2026-11-24",
-    isFeatured: true,
-    subtitle: "José Miguel Agrelot Coliseum, San Juan, Puerto Rico",
-    // FOUCH 0.3A: the prediction lock instant for this event now lives
-    // in Supabase `events.prediction_lock_at` (migration 0007), seeded
-    // with this exact same value. It is intentionally NOT duplicated
-    // here — see src/lib/events-db.ts.
-  },
-];
-
-export function getFeaturedEvent(): FouchEvent | null {
-  return events.find((event) => event.isFeatured) ?? null;
+export async function getFeaturedEvent(): Promise<FouchEvent | null> {
+  return getFeaturedEventFromDb();
 }
 
-export function getEventBySlug(slug: string): FouchEvent | null {
-  return events.find((event) => event.slug === slug) ?? null;
+export async function getEventBySlug(slug: string): Promise<FouchEvent | null> {
+  return getEventBySlugFromDb(slug);
 }
 
 /**

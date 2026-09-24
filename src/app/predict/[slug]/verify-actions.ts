@@ -98,7 +98,7 @@ async function validateAndLock(
   authUserId: string,
   payload: LockPredictionPayload,
 ): Promise<VerifyAndLockResult> {
-  const event = getEventBySlug(payload.eventSlug);
+  const event = await getEventBySlug(payload.eventSlug);
   if (!event) {
     return { success: false, error: "This event doesn't exist.", failureReason: "validation_failed" };
   }
@@ -344,7 +344,7 @@ async function validateAndEdit(
     };
   }
 
-  const event = getEventBySlug(editable.eventSlug);
+  const event = await getEventBySlug(editable.eventSlug);
   if (!event) {
     return { success: false, error: "This event doesn't exist.", failureReason: "validation_failed" };
   }

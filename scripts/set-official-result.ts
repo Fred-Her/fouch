@@ -63,7 +63,7 @@ const DEMO_RESULT: OfficialResultInput = {
 };
 
 async function main() {
-  const event = getEventBySlug(EVENT_SLUG);
+  const event = await getEventBySlug(EVENT_SLUG);
   if (!event) {
     console.error(`Event not found: ${EVENT_SLUG}`);
     process.exit(1);

@@ -12,8 +12,8 @@ import { ViewTracker } from "@/components/ViewTracker";
 // baked into a static build and left stale until the next deploy.
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const featuredEvent = getFeaturedEvent();
+export default async function Home() {
+  const featuredEvent = await getFeaturedEvent();
 
   return (
     <>

@@ -20,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const event = getEventBySlug(slug);
+  const event = await getEventBySlug(slug);
   if (!event) return {};
 
   const participantData = await getParticipantsForEvent(slug);
@@ -47,7 +47,7 @@ export default async function EventLeaderboardPage({
   const { slug } = await params;
   const { from } = await searchParams;
 
-  const event = getEventBySlug(slug);
+  const event = await getEventBySlug(slug);
   if (!event) notFound();
 
   const participantData = await getParticipantsForEvent(slug);

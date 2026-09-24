@@ -485,7 +485,7 @@ export async function getPredictionWithParticipants(publicId: string): Promise<{
   const prediction = await getPredictionByPublicId(publicId);
   if (!prediction) return null;
 
-  const event = getEventBySlug(prediction.eventSlug);
+  const event = await getEventBySlug(prediction.eventSlug);
   if (!event) return null;
 
   // FOUCH 0.3B: resolves by id regardless of current status â€” a
