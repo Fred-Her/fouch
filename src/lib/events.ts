@@ -1,6 +1,6 @@
 ﻿import "server-only";
 import type { FouchEvent } from "@/types/event";
-import { getEventBySlugFromDb, getFeaturedEventFromDb } from "@/lib/events-db";
+import { getEventBySlugFromDb, getFeaturedEventFromDb, getUpcomingEventsFromDb } from "@/lib/events-db";
 
 /**
  * FOUCH 0.3B Event Resolution Fix — `events` in Supabase is now the
@@ -28,6 +28,17 @@ export async function getFeaturedEvent(): Promise<FouchEvent | null> {
 
 export async function getEventBySlug(slug: string): Promise<FouchEvent | null> {
   return getEventBySlugFromDb(slug);
+}
+
+/**
+ * FOUCH 0.3B Home Multi-Event Rendering Fix — every upcoming event
+ * EXCEPT the one already shown as Featured, for the Home's secondary
+ * "Upcoming" section. Purely a filter on top of getUpcomingEventsFromDb
+ * — no separate query, no per-event logic.
+ */
+export async function getSecondaryUpcomingEvents(excludeSlug: string | null): Promise<FouchEvent[]> {
+  const events = await getUpcomingEventsFromDb();
+  return events.filter((event) => event.slug !== excludeSlug);
 }
 
 /**

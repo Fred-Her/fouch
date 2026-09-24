@@ -1,8 +1,9 @@
 ﻿import { en } from "@/content/en";
-import { getFeaturedEvent } from "@/lib/events";
+import { getFeaturedEvent, getSecondaryUpcomingEvents } from "@/lib/events";
 import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
 import { FeaturedEvent } from "@/components/FeaturedEvent";
+import { UpcomingEvents } from "@/components/UpcomingEvents";
 import { HowItWorks } from "@/components/HowItWorks";
 import { Footer } from "@/components/Footer";
 import { ViewTracker } from "@/components/ViewTracker";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const featuredEvent = await getFeaturedEvent();
+  const upcomingEvents = await getSecondaryUpcomingEvents(featuredEvent?.slug ?? null);
 
   return (
     <>
@@ -24,6 +26,7 @@ export default async function Home() {
         {featuredEvent ? (
           <FeaturedEvent event={featuredEvent} dictionary={en} />
         ) : null}
+        <UpcomingEvents events={upcomingEvents} dictionary={en} />
         <HowItWorks dictionary={en} />
       </main>
       <Footer dictionary={en} />

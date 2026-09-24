@@ -3,6 +3,7 @@ import type { Dictionary } from "@/content/types";
 import type { FouchEvent } from "@/types/event";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { getOfficialResult } from "@/lib/results-db";
+import { splitEventNameYear } from "@/lib/event-name-split";
 import { TrackedLink } from "./TrackedLink";
 
 const statusLabel: Record<FouchEvent["status"], string> = {
@@ -35,6 +36,8 @@ export async function FeaturedEvent({
   // Decorative only â€” a preview of the ranking mechanic, not real input.
   const previewSlots = [1, 2, 3];
 
+  const { primary, year } = splitEventNameYear(event.name);
+
   return (
     <section
       id="featured-event"
@@ -61,14 +64,14 @@ export async function FeaturedEvent({
         </div>
 
         <h2 className="mt-5 font-display leading-[0.95] text-text-primary">
-          <span className="block text-3xl sm:text-4xl">Miss Universe</span>
-          <span className="block text-7xl font-semibold tracking-tight sm:text-8xl">
-            2026
-          </span>
+          <span className="block text-3xl sm:text-4xl">{primary}</span>
+          {year ? (
+            <span className="block text-7xl font-semibold tracking-tight sm:text-8xl">{year}</span>
+          ) : null}
         </h2>
 
         <p className="mt-4 text-sm uppercase tracking-[0.15em] text-text-muted">
-          {dayMonth} Â· {event.subtitle}
+          {dayMonth} · {event.subtitle}
         </p>
 
         <p className="mt-8 text-lg text-text-secondary">{dictionary.featuredEvent.prompt}</p>

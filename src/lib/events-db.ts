@@ -110,6 +110,28 @@ export async function getEventBySlugFromDb(slug: string): Promise<FouchEvent | n
 }
 
 /**
+ * FOUCH 0.3B Home Multi-Event Rendering Fix — every event with
+ * status = 'upcoming', ordered by date. The Home page uses this to
+ * render the secondary "Upcoming" section, excluding whichever event
+ * it already shows as Featured. This is the minimal generic query
+ * needed to support more than one event on the Home at once — no
+ * per-event special casing, no admin UI, just a plain SELECT.
+ */
+export async function getUpcomingEventsFromDb(): Promise<FouchEvent[]> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_COLUMNS)
+    .eq("status", "upcoming")
+    .order("event_date", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(toFouchEvent);
+}
+
+/**
  * Resolves the current featured event from the database. If more
  * than one row has is_featured = true (a data-entry mistake — see
  * this fix's report on why no DB constraint enforces "at most one"
