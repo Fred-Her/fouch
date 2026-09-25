@@ -29,7 +29,7 @@ export async function generateMetadata({
   return {
     title: `${event.name} Predictions Leaderboard | FOUCH`,
     description: isDemo
-      ? "A demo FOUCH predictions leaderboard â€” not an official result."
+      ? "A demo FOUCH predictions leaderboard — not an official result."
       : "See how FOUCH predictions ranked after the result.",
     // Demo leaderboards should never be indexed as if they were real â€”
     // same non-indexing posture as public prediction pages (Sprint 2).
@@ -70,7 +70,7 @@ export default async function EventLeaderboardPage({
 
       {participantData.status === "demo" ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo leaderboard â€” not an official outcome
+          Demo leaderboard — not an official outcome
         </p>
       ) : null}
 
@@ -116,7 +116,7 @@ export default async function EventLeaderboardPage({
               <p className="mt-1 text-sm text-text-secondary">
                 Fouch score {leaderboard.viewer.entry.score}
                 {leaderboard.viewer.percentile.percentile !== null
-                  ? ` Â· Top ${Math.max(1, Math.round(100 - leaderboard.viewer.percentile.percentile))}%`
+                  ? ` · Top ${Math.max(1, Math.round(100 - leaderboard.viewer.percentile.percentile))}%`
                   : ""}
               </p>
               {leaderboard.viewer.percentile.percentile === null ? (

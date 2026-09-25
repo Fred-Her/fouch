@@ -15,7 +15,7 @@ export async function generateMetadata({
   const event = await getEventBySlug(slug);
   if (!event) return {};
 
-  return { title: `Your Top 10 â€” ${event.name}` };
+  return { title: `Your Top 10 — ${event.name}` };
 }
 
 const REQUIRED_SELECTIONS = 10;

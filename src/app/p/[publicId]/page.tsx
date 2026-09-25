@@ -23,8 +23,8 @@ export async function generateMetadata({
   if (!record) return {};
 
   const title = record.prediction.nickname
-    ? `${record.prediction.nickname}'s Top 10 â€” ${record.event.name}`
-    : `A Top 10 prediction â€” ${record.event.name}`;
+    ? `${record.prediction.nickname}'s Top 10 — ${record.event.name}`
+    : `A Top 10 prediction — ${record.event.name}`;
   const description = "See the prediction, then make your own call.";
 
   return {
@@ -102,7 +102,7 @@ export default async function PublicPredictionPage({
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo prediction â€” not the official lineup
+          Demo prediction — not the official lineup
         </p>
       ) : sourceCheckedAt ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">

@@ -151,7 +151,7 @@ export function EditPredictionFlow({
     try {
       result = await startEmailVerification(targetEmail);
     } catch {
-      setEmailError("We couldn't send a code â€” try again in a moment.");
+      setEmailError("We couldn't send a code — try again in a moment.");
       setEmailSubmitting(false);
       return;
     }
@@ -202,7 +202,7 @@ export function EditPredictionFlow({
       });
     } catch {
       setOtpSubmitting(false);
-      setOtpError("We couldn't verify your code â€” try again.");
+      setOtpError("We couldn't verify your code — try again.");
       return;
     }
 

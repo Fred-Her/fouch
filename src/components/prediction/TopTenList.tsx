@@ -42,7 +42,7 @@ export function TopTenList({
           {!participant.isActive ? (
             <span
               className="shrink-0 rounded border border-accent-strong px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-accent-strong"
-              title="No longer available â€” remove and pick a current contestant to save changes."
+              title="No longer available — remove and pick a current contestant to save changes."
             >
               Replace
             </span>

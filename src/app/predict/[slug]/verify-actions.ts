@@ -44,7 +44,7 @@ export async function startEmailVerification(email: string): Promise<StartVerifi
 
   const supabase = getSupabaseAuthClient();
   if (!supabase) {
-    return { success: false, error: "Verification isn't available right now â€” try again shortly." };
+    return { success: false, error: "Verification isn't available right now — try again shortly." };
   }
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -57,7 +57,7 @@ export async function startEmailVerification(email: string): Promise<StartVerifi
     // transient failure) â€” never surface raw error internals, but no
     // need to further genericize what Supabase itself already returns
     // as a user-facing string.
-    return { success: false, error: "We couldn't send a code â€” try again in a moment." };
+    return { success: false, error: "We couldn't send a code — try again in a moment." };
   }
 
   return { success: true };
@@ -157,7 +157,7 @@ async function validateAndLock(
   } catch {
     return {
       success: false,
-      error: "We couldn't lock your prediction. Your Top 10 is still saved â€” try again.",
+      error: "We couldn't lock your prediction. Your Top 10 is still saved — try again.",
       failureReason: "insert_failed",
     };
   }
@@ -186,7 +186,7 @@ export async function verifyEmailAndLockPrediction(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now â€” try again shortly.",
+      error: "Verification isn't available right now — try again shortly.",
       failureReason: "invalid_code",
     };
   }
@@ -235,7 +235,7 @@ export async function retryLockWithVerifiedSession(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now â€” try again shortly.",
+      error: "Verification isn't available right now — try again shortly.",
       failureReason: "session_expired",
     };
   }
@@ -245,7 +245,7 @@ export async function retryLockWithVerifiedSession(
   if (error || !data.user) {
     return {
       success: false,
-      error: "Your verification expired â€” please request a new code.",
+      error: "Your verification expired — please request a new code.",
       failureReason: "session_expired",
     };
   }
@@ -395,7 +395,7 @@ async function validateAndEdit(
   } catch {
     return {
       success: false,
-      error: "We couldn't save your changes. Your Top 10 is still what it was â€” try again.",
+      error: "We couldn't save your changes. Your Top 10 is still what it was — try again.",
       failureReason: "edit_failed",
     };
   }
@@ -431,7 +431,7 @@ export async function verifyEmailAndEditPrediction(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now â€” try again shortly.",
+      error: "Verification isn't available right now — try again shortly.",
       failureReason: "invalid_code",
     };
   }
@@ -480,7 +480,7 @@ export async function retryEditWithVerifiedSession(
   if (!supabase) {
     return {
       success: false,
-      error: "Verification isn't available right now â€” try again shortly.",
+      error: "Verification isn't available right now — try again shortly.",
       failureReason: "session_expired",
     };
   }
@@ -490,7 +490,7 @@ export async function retryEditWithVerifiedSession(
   if (error || !data.user) {
     return {
       success: false,
-      error: "Your verification expired â€” please request a new code.",
+      error: "Your verification expired — please request a new code.",
       failureReason: "session_expired",
     };
   }

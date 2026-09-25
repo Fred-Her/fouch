@@ -57,7 +57,7 @@ export async function insertPrediction(
 ): Promise<InsertPredictionResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { success: false, error: "Submissions aren't available yet â€” the database isn't configured." };
+    return { success: false, error: "Submissions aren't available yet — the database isn't configured." };
   }
 
   for (let attempt = 0; attempt < MAX_PUBLIC_ID_ATTEMPTS; attempt++) {
@@ -252,7 +252,7 @@ export async function createPredictionVersion(params: {
 }): Promise<CreateVersionResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { success: false, error: "Editing isn't available right now â€” the database isn't configured." };
+    return { success: false, error: "Editing isn't available right now — the database isn't configured." };
   }
 
   const isUnchanged = isRankingUnchanged(params.currentRankedParticipantIds, params.participantIds);
@@ -293,7 +293,7 @@ export async function createPredictionVersion(params: {
   if (currentVersionRow.version_number !== params.expectedVersionNumber) {
     return {
       success: false,
-      error: "Your prediction changed elsewhere since you opened this â€” please reload and try again.",
+      error: "Your prediction changed elsewhere since you opened this — please reload and try again.",
     };
   }
 
@@ -312,7 +312,7 @@ export async function createPredictionVersion(params: {
     // higher number, which could race indefinitely under contention.
     return {
       success: false,
-      error: "Your prediction changed elsewhere since you opened this â€” please reload and try again.",
+      error: "Your prediction changed elsewhere since you opened this — please reload and try again.",
     };
   }
 

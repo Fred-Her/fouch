@@ -70,7 +70,7 @@ export async function YouVsTheWorld({
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-2 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo community data â€” not official {pluralNoun}
+          Demo community data — not official {pluralNoun}
         </p>
       ) : null}
 
@@ -84,13 +84,13 @@ export async function YouVsTheWorld({
         <div className="mt-8 space-y-10">
           {bucket === "1_4" ? (
             <p className="text-sm text-text-muted">
-              The crowd is just forming â€” {comparison.population} other{" "}
+              The crowd is just forming — {comparison.population} other{" "}
               {comparison.population === 1 ? pluralNoun.slice(0, -1) : pluralNoun} in so far.
             </p>
           ) : null}
           {bucket === "5_9" ? (
             <p className="text-xs uppercase tracking-[0.15em] text-text-muted">
-              Early signal Â· based on {comparison.population} other predictions
+              Early signal · based on {comparison.population} other predictions
             </p>
           ) : null}
 
@@ -106,7 +106,7 @@ export async function YouVsTheWorld({
                 <CountryFlag
                   countryCode={participantsById.get(comparison.sameWinner.participantId)?.countryCode}
                 />{" "}
-                {participantsById.get(comparison.sameWinner.participantId)?.displayName} â€”{" "}
+                {participantsById.get(comparison.sameWinner.participantId)?.displayName} —{" "}
                 {comparison.sameWinner.count === 0
                   ? "nobody else made the same call."
                   : mode === "count"

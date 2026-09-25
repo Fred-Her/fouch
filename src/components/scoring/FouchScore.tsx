@@ -88,7 +88,7 @@ export async function FouchScore({
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-2 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo result â€” not an official outcome
+          Demo result — not an official outcome
         </p>
       ) : null}
 
@@ -130,14 +130,14 @@ export async function FouchScore({
             ) : (
               <div className="space-y-1 text-text-primary">
                 <p className="flex items-center gap-1.5">
-                  <span className="text-text-muted">âœ— Missed â€” your pick:</span>
+                  <span className="text-text-muted">âœ— Missed — your pick:</span>
                   {userWinnerPick ? (
                     <>
                       <CountryFlag countryCode={userWinnerPick.countryCode} />
                       {userWinnerPick.displayName}
                     </>
                   ) : (
-                    "â€”"
+                    "—"
                   )}
                 </p>
                 {actualWinner ? (
@@ -155,19 +155,19 @@ export async function FouchScore({
         <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Podium</dt>
           <dd className="text-text-primary">
-            {podium.hits} of {podium.total} Â· {formatPoints(podium.earned)} / {podium.max}
+            {podium.hits} of {podium.total} · {formatPoints(podium.earned)} / {podium.max}
           </dd>
         </div>
         <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Top 5</dt>
           <dd className="text-text-primary">
-            {top5.hits} of {top5.total} Â· {formatPoints(top5.earned)} / {top5.max}
+            {top5.hits} of {top5.total} · {formatPoints(top5.earned)} / {top5.max}
           </dd>
         </div>
         <div className="flex items-center justify-between border-b border-border pb-3">
           <dt className="text-text-secondary">Top 10</dt>
           <dd className="text-text-primary">
-            {top10.hits} of {top10.total} Â· {formatPoints(top10.earned)} / {top10.max}
+            {top10.hits} of {top10.total} · {formatPoints(top10.earned)} / {top10.max}
           </dd>
         </div>
         <div>

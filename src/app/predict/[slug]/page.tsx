@@ -17,7 +17,7 @@ export async function generateMetadata({
   if (!event) return {};
 
   return {
-    title: `Build your Top 10 â€” ${event.name}`,
+    title: `Build your Top 10 — ${event.name}`,
     description: "Choose the 10 contestants you think will go furthest.",
   };
 }
@@ -79,7 +79,7 @@ export default async function PredictPage({
 
         {status === "demo" ? (
           <p className="mt-4 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-            Demo participant data â€” not the official lineup
+            Demo participant data — not the official lineup
           </p>
         ) : sourceCheckedAt ? (
           <p className="mt-4 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
