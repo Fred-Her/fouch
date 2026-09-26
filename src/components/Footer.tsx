@@ -10,7 +10,8 @@ export function Footer({ dictionary }: { dictionary: Dictionary }) {
         </p>
         <p className="mt-1 text-sm text-text-muted">{dictionary.footer.tagline}</p>
         <p className="mt-1 text-xs text-text-muted">
-          FOUCH is an independent fan prediction game — not affiliated with Miss Universe.
+          FOUCH is an independent entertainment prediction game. Not affiliated with or endorsed by
+          the events, organizations, or participants featured on the platform.
         </p>
         <div className="mt-3 flex gap-4 text-xs text-text-muted">
           <Link href="/privacy" className="underline hover:text-text-secondary">

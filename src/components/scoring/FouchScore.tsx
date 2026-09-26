@@ -117,7 +117,7 @@ export async function FouchScore({
           <dd className="mt-2">
             {winner.hit ? (
               <span className="inline-flex items-center gap-1.5 text-accent-strong">
-                âœ“
+                ✓
                 {userWinnerPick ? (
                   <>
                     <CountryFlag countryCode={userWinnerPick.countryCode} />
@@ -130,7 +130,7 @@ export async function FouchScore({
             ) : (
               <div className="space-y-1 text-text-primary">
                 <p className="flex items-center gap-1.5">
-                  <span className="text-text-muted">âœ— Missed — your pick:</span>
+                  <span className="text-text-muted">✗ Missed — your pick:</span>
                   {userWinnerPick ? (
                     <>
                       <CountryFlag countryCode={userWinnerPick.countryCode} />
