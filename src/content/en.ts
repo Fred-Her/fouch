@@ -11,7 +11,7 @@ export const en: Dictionary = {
   },
   hero: {
     headline: "Make your call.",
-    subhead: "Predict the moments everyone will be talking about.",
+    subhead: "Predict it. See what the crowd thinks. Prove you called it.",
     cta: "Make your Top 10",
   },
   featuredEvent: {
