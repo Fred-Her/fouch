@@ -122,6 +122,7 @@ export async function FouchScore({
                   <>
                     <CountryFlag countryCode={userWinnerPick.countryCode} />
                     {userWinnerPick.displayName}
+                    <span className="text-text-muted">· {userWinnerPick.countryName}</span>
                   </>
                 ) : (
                   "Correct"
@@ -135,6 +136,7 @@ export async function FouchScore({
                     <>
                       <CountryFlag countryCode={userWinnerPick.countryCode} />
                       {userWinnerPick.displayName}
+                      <span className="text-text-muted">· {userWinnerPick.countryName}</span>
                     </>
                   ) : (
                     "—"
@@ -145,6 +147,7 @@ export async function FouchScore({
                     <span className="text-text-muted">Actual:</span>
                     <CountryFlag countryCode={actualWinner.countryCode} />
                     {actualWinner.displayName}
+                    <span className="text-text-muted">· {actualWinner.countryName}</span>
                   </p>
                 ) : null}
               </div>

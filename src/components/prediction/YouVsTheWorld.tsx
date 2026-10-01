@@ -106,7 +106,11 @@ export async function YouVsTheWorld({
                 <CountryFlag
                   countryCode={participantsById.get(comparison.sameWinner.participantId)?.countryCode}
                 />{" "}
-                {participantsById.get(comparison.sameWinner.participantId)?.displayName} —{" "}
+                {participantsById.get(comparison.sameWinner.participantId)?.displayName}{" "}
+                <span className="text-text-muted">
+                  · {participantsById.get(comparison.sameWinner.participantId)?.countryName}
+                </span>{" "}
+                —{" "}
                 {comparison.sameWinner.count === 0
                   ? "nobody else made the same call."
                   : mode === "count"
@@ -136,7 +140,10 @@ export async function YouVsTheWorld({
                 <CountryFlag
                   countryCode={participantsById.get(comparison.boldestPick.participantId)?.countryCode}
                 />{" "}
-                {participantsById.get(comparison.boldestPick.participantId)?.displayName}
+                {participantsById.get(comparison.boldestPick.participantId)?.displayName}{" "}
+                <span className="text-text-muted">
+                  · {participantsById.get(comparison.boldestPick.participantId)?.countryName}
+                </span>
               </p>
               <p className="mt-1 text-sm uppercase tracking-[0.15em] text-text-secondary">
                 Your boldest call
@@ -168,8 +175,9 @@ export async function YouVsTheWorld({
                         {String(index + 1).padStart(2, "0")}
                       </span>
                       <CountryFlag countryCode={participant.countryCode} />
-                      <span className="flex-1 text-sm text-text-primary">
-                        {participant.displayName}
+                      <span className="flex-1 truncate text-sm text-text-primary">
+                        {participant.displayName}{" "}
+                        <span className="text-text-muted">· {participant.countryName}</span>
                       </span>
                       <span className="text-right text-xs text-text-muted">
                         {formatRatio(entry.top10Count, comparison.population, mode)} picked

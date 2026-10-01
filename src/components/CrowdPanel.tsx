@@ -64,7 +64,10 @@ export function CrowdPanel({
               <li key={pick.participant.id} className="flex items-center gap-3">
                 <span className="font-display w-4 shrink-0 text-sm text-text-muted">{index + 1}</span>
                 <CountryFlag countryCode={pick.participant.countryCode} className="h-4 w-6 shrink-0 rounded-sm" />
-                <span className="flex-1 truncate text-sm text-text-primary">{pick.participant.displayName}</span>
+                <span className="flex-1 truncate text-sm text-text-primary">
+                  {pick.participant.displayName}{" "}
+                  <span className="text-text-muted">· {pick.participant.countryName}</span>
+                </span>
                 <div className="flex w-24 items-center gap-2">
                   <span className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
                     <span

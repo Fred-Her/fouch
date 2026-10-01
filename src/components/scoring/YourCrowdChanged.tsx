@@ -63,7 +63,9 @@ export async function YourCrowdChanged({
 
       <div className="mt-3 flex items-center gap-2">
         <CountryFlag countryCode={winner.countryCode} className="text-2xl" />
-        <span className="font-display text-xl text-text-primary">{winner.displayName}</span>
+        <span className="font-display text-xl text-text-primary">
+          {winner.displayName} <span className="text-text-muted text-base">· {winner.countryName}</span>
+        </span>
       </div>
 
       <p className="mt-2 font-display text-4xl text-accent-strong">

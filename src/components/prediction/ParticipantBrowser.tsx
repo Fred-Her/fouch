@@ -66,7 +66,9 @@ export function ParticipantBrowser({
                   }`}
                 >
                   <CountryFlag countryCode={participant.countryCode} className="text-lg" />
-                  <span className="flex-1 text-sm">{participant.displayName}</span>
+                  <span className="flex-1 truncate text-sm">
+                    {participant.displayName} <span className="text-text-muted">· {participant.countryName}</span>
+                  </span>
                   {selected ? (
                     <span className="text-xs font-medium uppercase tracking-wide">Selected</span>
                   ) : null}

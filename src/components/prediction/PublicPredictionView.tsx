@@ -1,4 +1,4 @@
-﻿﻿﻿"use client";
+﻿"use client";
 
 import { useEffect, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
@@ -128,7 +128,9 @@ export function PublicPredictionView({
               {String(index + 1).padStart(2, "0")}
             </span>
             <CountryFlag countryCode={participant.countryCode} className="text-xl" />
-            <span className="text-sm text-text-primary">{participant.displayName}</span>
+            <span className="truncate text-sm text-text-primary">
+              {participant.displayName} <span className="text-text-muted">· {participant.countryName}</span>
+            </span>
           </li>
         ))}
       </ol>

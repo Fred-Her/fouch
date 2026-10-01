@@ -19,23 +19,30 @@ const TEXT_MUTED = "#A39FB0";
  * `next/og` (Satori under the hood) does not render Unicode flag
  * emoji reliably — confirmed by generating and visually inspecting
  * the actual output, which showed blank space where a flag should be.
- * A small country-code badge is the robust substitute: no emoji font
- * dependency, no network fetch, renders identically everywhere.
+ * Plain country-name text is the robust substitute: no emoji font
+ * dependency, no network fetch, renders identically everywhere — and,
+ * per Cohort 0 feedback, is what users actually asked for (a bare ISO
+ * code like "VE" wasn't recognizable on its own). `maxWidth` + the
+ * overflow/ellipsis trio keeps a long country name from breaking this
+ * fixed-size image's layout.
  */
-function CountryBadge({ code, fontSize }: { code: string; fontSize: number }) {
+function CountryBadge({ name, fontSize, maxWidth }: { name: string; fontSize: number; maxWidth: number }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-end",
         fontSize,
         fontWeight: 700,
-        letterSpacing: 1,
         color: TEXT_MUTED,
+        maxWidth,
+        overflow: "hidden",
+        whiteSpace: "nowrap",
+        textOverflow: "ellipsis",
       }}
     >
-      {code}
+      {name}
     </div>
   );
 }
@@ -132,7 +139,7 @@ export function PredictionCardMarkup({
             <div style={{ display: "flex", fontSize: 40 * scale, fontWeight: 700, flex: 1 }}>
               {participant.displayName}
             </div>
-            <CountryBadge code={participant.countryCode} fontSize={26 * scale} />
+            <CountryBadge name={participant.countryName} fontSize={26 * scale} maxWidth={230} />
           </div>
         ))}
       </div>
@@ -144,7 +151,7 @@ export function PredictionCardMarkup({
             <div key={participant.id} style={{ display: "flex", alignItems: "center", fontSize: 27 * scale }}>
               <div style={{ display: "flex", width: 60, color: TEXT_MUTED }}>{index + 4}</div>
               <div style={{ display: "flex", flex: 1, color: TEXT_PRIMARY }}>{participant.displayName}</div>
-              <CountryBadge code={participant.countryCode} fontSize={20} />
+              <CountryBadge name={participant.countryName} fontSize={20} maxWidth={170} />
             </div>
           ))}
         </div>

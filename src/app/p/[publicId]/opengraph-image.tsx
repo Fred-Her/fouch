@@ -68,18 +68,22 @@ export default async function OpengraphImage({
           {top3.map((participant, index) => (
             <div key={participant.id} style={{ display: "flex", alignItems: "center", fontSize: 28 }}>
               <span style={{ display: "flex", color: accent, marginRight: 10 }}>{index + 1}</span>
+              <span style={{ display: "flex" }}>{participant.displayName}</span>
               <span
                 style={{
                   display: "flex",
                   fontSize: 15,
                   fontWeight: 700,
                   color: textMuted,
-                  marginRight: 10,
+                  marginLeft: 10,
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  maxWidth: 160,
                 }}
               >
-                {participant.countryCode}
+                · {participant.countryName}
               </span>
-              <span style={{ display: "flex" }}>{participant.displayName}</span>
             </div>
           ))}
         </div>

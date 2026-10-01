@@ -37,7 +37,7 @@ export function TopTenList({
           </span>
           <CountryFlag countryCode={participant.countryCode} className="text-lg" />
           <span className="flex-1 truncate text-sm text-text-primary">
-            {participant.displayName}
+            {participant.displayName} <span className="text-text-muted">· {participant.countryName}</span>
           </span>
           {!participant.isActive ? (
             <span
