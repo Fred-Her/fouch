@@ -262,3 +262,17 @@ export const PREDICTOR_COUNTRIES: Array<{ code: string; name: string }> = [
   { code: "ZM", name: "Zambia" },
   { code: "ZW", name: "Zimbabwe" },
 ].sort((a, b) => a.name.localeCompare(b.name));
+
+/**
+ * FOUCH Country Recognition consistency fix — the single lookup every
+ * predictor-country display surface (Share Cards, public prediction
+ * header) uses to resolve a stored ISO code to its human-readable
+ * name. Reuses PREDICTOR_COUNTRIES — the same list the country
+ * selector itself is built from — so there is only ever one
+ * code-to-name mapping in the app, never a second one. Returns null
+ * for a code that isn't in the list (never fabricates a name).
+ */
+export function getPredictorCountryName(code: string | null): string | null {
+  if (!code) return null;
+  return PREDICTOR_COUNTRIES.find((country) => country.code === code)?.name ?? null;
+}

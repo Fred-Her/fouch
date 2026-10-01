@@ -1,4 +1,5 @@
 ﻿import type { ScoreBreakdown, ScoreBand } from "@/types/scoring";
+import { getPredictorCountryName } from "@/lib/countries";
 
 export interface ResultCardData {
   eventName: string;
@@ -45,9 +46,10 @@ export function ResultCardMarkup({
   siteDomain: string;
 }) {
   const scale = Math.min(1.32, Math.max(1, height / 1350));
+  const predictorCountryName = getPredictorCountryName(data.countryCode);
   const whoBy = data.nickname
-    ? `${data.nickname}${data.countryCode ? ` · ${data.countryCode}` : ""}`
-    : data.countryCode;
+    ? `${data.nickname}${predictorCountryName ? ` · ${predictorCountryName}` : ""}`
+    : predictorCountryName;
   const { breakdown } = data;
 
   return (
@@ -84,7 +86,20 @@ export function ResultCardMarkup({
 
       <div style={{ display: "flex", fontSize: 30, color: TEXT_MUTED, marginTop: 24 }}>{data.eventName}</div>
       {whoBy ? (
-        <div style={{ display: "flex", fontSize: 26, color: ACCENT_STRONG, marginTop: 8 }}>{whoBy}</div>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 26,
+            color: ACCENT_STRONG,
+            marginTop: 8,
+            maxWidth: width - 112,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {whoBy}
+        </div>
       ) : null}
 
       {/* Score — the hero element */}

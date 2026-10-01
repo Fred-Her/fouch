@@ -1,4 +1,5 @@
 ﻿import type { Participant } from "@/types/participant";
+import { getPredictorCountryName } from "@/lib/countries";
 
 export interface CardData {
   eventName: string;
@@ -69,9 +70,10 @@ export function PredictionCardMarkup({
   const scale = Math.min(1.32, Math.max(1, height / 1350));
   const top3 = data.rankedParticipants.slice(0, 3);
   const rest = data.rankedParticipants.slice(3, 10);
+  const predictorCountryName = getPredictorCountryName(data.countryCode);
   const whoBy = data.nickname
-    ? `${data.nickname}${data.countryCode ? ` · ${data.countryCode}` : ""}`
-    : data.countryCode;
+    ? `${data.nickname}${predictorCountryName ? ` · ${predictorCountryName}` : ""}`
+    : predictorCountryName;
 
   return (
     <div
@@ -114,7 +116,18 @@ export function PredictionCardMarkup({
           {data.eventName}
         </div>
         {whoBy ? (
-          <div style={{ display: "flex", fontSize: 28, color: ACCENT_STRONG, marginTop: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 28,
+              color: ACCENT_STRONG,
+              marginTop: 10,
+              maxWidth: width - 112,
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+            }}
+          >
             {whoBy}
           </div>
         ) : null}

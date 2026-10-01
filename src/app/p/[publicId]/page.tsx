@@ -8,6 +8,7 @@ import { getParticipantsForEvent } from "@/lib/participants";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { getOfficialResult } from "@/lib/results-db";
 import { formatContestantListUpdated } from "@/lib/event-time-display";
+import { getPredictorCountryName } from "@/lib/countries";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
 import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
 import { FouchScore } from "@/components/scoring/FouchScore";
@@ -97,7 +98,10 @@ export default async function PublicPredictionPage({
       </p>
 
       {prediction.countryCode ? (
-        <p className="mt-1 text-sm text-text-muted"><CountryFlag countryCode={prediction.countryCode} /></p>
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-text-muted">
+          <CountryFlag countryCode={prediction.countryCode} />
+          {getPredictorCountryName(prediction.countryCode)}
+        </p>
       ) : null}
 
       {prediction.dataStatus === "demo" ? (
