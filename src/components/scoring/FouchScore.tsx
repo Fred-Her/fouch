@@ -201,6 +201,7 @@ export async function FouchScore({
           <ShareActions
             variant="result"
             eventSlug={event.slug}
+            publicId={publicId}
             publicUrl={`${siteUrl}/p/${publicId}`}
             storyCardUrl={`/p/${publicId}/result-card/story`}
             postCardUrl={`/p/${publicId}/result-card/post`}

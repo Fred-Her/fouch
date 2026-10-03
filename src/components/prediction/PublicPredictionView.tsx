@@ -92,11 +92,12 @@ export function PublicPredictionView({
             : "font-display text-lg text-text-primary"
         }
       >
-        {hasResult ? "Your original prediction" : "Share your prediction"}
+        {hasResult ? "Your original prediction" : "Share your call"}
       </p>
       <div className="mt-3">
         <ShareActions
           eventSlug={eventSlug}
+          publicId={publicId}
           publicUrl={publicUrl}
           storyCardUrl={`/p/${publicId}/card/story`}
           postCardUrl={`/p/${publicId}/card/post`}
