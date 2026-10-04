@@ -40,15 +40,16 @@ export function Hero({
 
       <div className="relative mx-auto max-w-content px-6 pb-10 pt-12 sm:pb-14 sm:pt-20">
         <p className="text-xs font-medium uppercase tracking-[0.25em] text-text-muted">
-          Entertainment Predictions
+          {dictionary.hero.eyebrow}
         </p>
 
         <h1 className="mt-3 font-display text-[3.25rem] font-semibold uppercase leading-[0.95] tracking-tight text-text-primary sm:text-7xl">
-          Make
-          <br />
-          your
-          <br />
-          call.
+          {dictionary.hero.headlineLines.map((line, index) => (
+            <span key={line}>
+              {index > 0 ? <br /> : null}
+              {line}
+            </span>
+          ))}
         </h1>
 
         <p className="mt-6 max-w-sm text-lg text-text-secondary">
@@ -61,7 +62,7 @@ export function Hero({
               href={`/predict/${eventSlug}`}
               className="group inline-flex items-center gap-2 rounded bg-accent px-7 py-4 text-base font-medium text-on-accent shadow-[0_0_0_1px_rgba(166,52,46,0.4)] transition-colors hover:bg-accent-strong"
             >
-              Start predicting
+              {dictionary.hero.cta}
               <ArrowRight
                 className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
                 aria-hidden
@@ -75,7 +76,7 @@ export function Hero({
                 aria-hidden
                 className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse motion-reduce:animate-none"
               />
-              Predictions Open
+              {dictionary.hero.predictionsOpen}
             </span>
           ) : null}
         </div>
@@ -83,17 +84,17 @@ export function Hero({
         <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-border pt-6 text-sm text-text-muted">
           <span className="inline-flex items-center gap-2">
             <Trophy className="h-4 w-4" aria-hidden />
-            Predict
-            <span className="hidden text-text-secondary sm:inline">Build your Top 10</span>
+            {dictionary.hero.predictLabel}
+            <span className="hidden text-text-secondary sm:inline">{dictionary.hero.predictHint}</span>
           </span>
           <span className="inline-flex items-center gap-2">
             <BarChart3 className="h-4 w-4" aria-hidden />
-            Compete
-            <span className="hidden text-text-secondary sm:inline">See what the crowd thinks</span>
+            {dictionary.hero.competeLabel}
+            <span className="hidden text-text-secondary sm:inline">{dictionary.hero.competeHint}</span>
           </span>
           <span className="inline-flex items-center gap-2">
             <Star className="h-4 w-4" aria-hidden />
-            Prove it
+            {dictionary.hero.proveLabel}
           </span>
         </div>
       </div>

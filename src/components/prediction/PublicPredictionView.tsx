@@ -10,6 +10,9 @@ import { siteUrl } from "@/lib/site";
 import { formatEventLocalLockTime } from "@/lib/event-time-display";
 import type { Participant } from "@/types/participant";
 import { ShareActions } from "./ShareActions";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
+import { localizePath } from "@/lib/locale";
 
 export function PublicPredictionView({
   eventSlug,
@@ -65,6 +68,8 @@ export function PublicPredictionView({
   yourCrowdChanged?: ReactNode;
 }) {
   const searchParams = useSearchParams();
+  const { locale, dict } = useI18n();
+  const pt = dict.publicPrediction;
   const isNew = searchParams.get("new") === "1";
   const isEdited = searchParams.get("edited") === "1";
   const showSavedBanner = isNew || isEdited;
@@ -81,7 +86,10 @@ export function PublicPredictionView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const publicUrl = `${siteUrl}/p/${publicId}`;
+  // A shared link carries the language: a Spanish sharer's link opens
+  // in Spanish. /es/p/x and /p/x are the SAME prediction.
+  const publicPath = localizePath(`/p/${publicId}`, locale);
+  const publicUrl = `${siteUrl}${publicPath}`;
 
   const originalPredictionShare = (
     <div id="share" className="mt-10 scroll-mt-20 border-t border-border pt-8">
@@ -92,15 +100,15 @@ export function PublicPredictionView({
             : "font-display text-lg text-text-primary"
         }
       >
-        {hasResult ? "Your original prediction" : "Share your call"}
+        {hasResult ? pt.originalPrediction : pt.shareHeading}
       </p>
       <div className="mt-3">
         <ShareActions
           eventSlug={eventSlug}
           publicId={publicId}
           publicUrl={publicUrl}
-          storyCardUrl={`/p/${publicId}/card/story`}
-          postCardUrl={`/p/${publicId}/card/post`}
+          storyCardUrl={`${publicPath}/card/story`}
+          postCardUrl={`${publicPath}/card/post`}
         />
       </div>
     </div>
@@ -110,10 +118,10 @@ export function PublicPredictionView({
     <div>
       {showSavedBanner ? (
         <div className="mt-4">
-          <p className="font-display text-lg text-accent-strong">YOUR CALL IS IN</p>
+          <p className="font-display text-lg text-accent-strong">{pt.callIsIn}</p>
           {predictionLockAt ? (
             <p className="mt-1 text-sm text-text-secondary">
-              You can update your picks until {formatEventLocalLockTime(predictionLockAt, predictionTimezone)}.
+              {fmt(pt.updateUntil, { when: formatEventLocalLockTime(predictionLockAt, predictionTimezone, locale) })}
             </p>
           ) : null}
         </div>
@@ -143,17 +151,17 @@ export function PublicPredictionView({
             className="inline-flex items-center gap-2 rounded border border-border-strong px-5 py-2.5 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
           >
             <Pencil className="h-4 w-4" aria-hidden />
-            Edit my Top 10
+            {pt.editCta}
           </Link>
           {predictionLockAt ? (
             <p className="mt-2 text-xs text-text-muted">
-              You can update your picks until {formatEventLocalLockTime(predictionLockAt, predictionTimezone)}.
+              {fmt(pt.updateUntil, { when: formatEventLocalLockTime(predictionLockAt, predictionTimezone, locale) })}
             </p>
           ) : null}
         </div>
       ) : showLockedNotice ? (
         <p className="mt-4 text-sm font-medium uppercase tracking-wide text-text-muted">
-          YOUR CALL IS LOCKED
+          {pt.callLocked}
         </p>
       ) : null}
 
@@ -175,7 +183,7 @@ export function PublicPredictionView({
         onClick={() => track("public_prediction_cta_clicked", { event_slug: eventSlug })}
         className="mt-10 inline-flex items-center justify-center rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
       >
-        Make your Top 10
+        {pt.makeYourTop}
       </Link>
 
       {hasResult ? originalPredictionShare : null}

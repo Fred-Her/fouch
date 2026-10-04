@@ -1,6 +1,9 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
+import { translateServerError } from "@/lib/server-error-i18n";
 
 /** Matches Supabase Auth's own default OTP resend cooldown, confirmed
  * in Phase B — never invent a different number here. */
@@ -35,6 +38,8 @@ export function OtpStep({
   onUseDifferentEmail: () => void;
 }) {
   const [code, setCode] = useState("");
+  const { locale, dict } = useI18n();
+  const t = dict.auth;
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN_SECONDS);
 
   useEffect(() => {
@@ -53,10 +58,10 @@ export function OtpStep({
 
   return (
     <div className="mt-8 border-t border-border pt-6">
-      <p className="font-display text-xl text-text-primary">Enter the code we sent to {email}.</p>
+      <p className="font-display text-xl text-text-primary">{fmt(t.enterCode, { email })}</p>
 
       <label className="mt-4 block">
-        <span className="text-sm text-text-secondary">Verification code</span>
+        <span className="text-sm text-text-secondary">{t.codeLabel}</span>
         <input
           type="text"
           inputMode="numeric"
@@ -71,13 +76,13 @@ export function OtpStep({
 
       {errorMessage ? (
         <p className="mt-3 text-sm text-accent-strong" role="alert" aria-live="polite">
-          {errorMessage}
+          {translateServerError(errorMessage, locale)}
         </p>
       ) : null}
 
       {lockedOut ? (
         <p className="mt-3 text-sm text-accent-strong" role="alert">
-          Too many incorrect attempts. Request a new code.
+          {t.tooManyAttempts}
         </p>
       ) : (
         <button
@@ -86,20 +91,20 @@ export function OtpStep({
           onClick={() => onVerify(code)}
           className="mt-4 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
-          {submitting ? "Verifying…" : "Verify and lock"}
+          {submitting ? t.verifying : t.verifyCta}
         </button>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         {secondsLeft > 0 ? (
-          <span className="text-text-muted">Resend code in 0:{String(secondsLeft).padStart(2, "0")}</span>
+          <span className="text-text-muted">{fmt(t.resendIn, { s: String(secondsLeft).padStart(2, "0") })}</span>
         ) : (
           <button type="button" onClick={handleResend} className="text-text-secondary underline hover:text-accent-strong">
-            Resend code
+            {t.resendCode}
           </button>
         )}
         <button type="button" onClick={onUseDifferentEmail} className="text-text-secondary underline hover:text-accent-strong">
-          Use a different email
+          {t.differentEmail}
         </button>
       </div>
     </div>

@@ -1,8 +1,13 @@
-﻿import type { Dictionary } from "./types";
+﻿// STALE Sprint-0 stub — NOT wired into anything and NOT part of i18n v1
+// (English + Spanish only; Portuguese is explicitly out of scope for
+// now). Its shape predates the current Dictionary, so it is excluded
+// from the typed Dictionary rather than silently "fixed" with unreviewed
+// Portuguese copy. Rebuild it against src/content/en.ts when
+// Portuguese is actually scoped.
 
 // Prepared for future localization. Not yet wired into routing in Sprint 0 —
 // English is the only live locale.
-export const pt: Dictionary = {
+export const pt = {
   meta: {
     title: "Fouch — Faça sua previsão",
     description:

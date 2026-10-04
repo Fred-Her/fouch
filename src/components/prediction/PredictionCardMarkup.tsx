@@ -1,5 +1,7 @@
 ﻿import type { Participant } from "@/types/participant";
 import { getPredictorCountryName } from "@/lib/countries";
+import { getDictionary } from "@/lib/i18n";
+import type { Locale } from "@/lib/locale";
 
 export interface CardData {
   eventName: string;
@@ -7,6 +9,8 @@ export interface CardData {
   countryCode: string | null;
   isDemo: boolean;
   rankedParticipants: Participant[];
+  /** i18n v1 — presentation language only; ranking/identity never change. */
+  locale?: Locale;
 }
 
 const INK = "#141318";
@@ -70,7 +74,9 @@ export function PredictionCardMarkup({
   const scale = Math.min(1.32, Math.max(1, height / 1350));
   const top3 = data.rankedParticipants.slice(0, 3);
   const rest = data.rankedParticipants.slice(3, 10);
-  const predictorCountryName = getPredictorCountryName(data.countryCode);
+  const locale = data.locale ?? "en";
+  const sd = getDictionary(locale).share;
+  const predictorCountryName = getPredictorCountryName(data.countryCode, locale);
   const whoBy = data.nickname
     ? `${data.nickname}${predictorCountryName ? ` · ${predictorCountryName}` : ""}`
     : predictorCountryName;
@@ -105,12 +111,12 @@ export function PredictionCardMarkup({
                 padding: "6px 14px",
               }}
             >
-              DEMO
+              {sd.cardDemo}
             </div>
           ) : null}
         </div>
         <div style={{ display: "flex", fontSize: 46 * scale, fontWeight: 700, marginTop: 18 }}>
-          MAKE YOUR CALL.
+          {sd.cardHeadline}
         </div>
         <div style={{ display: "flex", fontSize: 30, color: TEXT_MUTED, marginTop: 8 }}>
           {data.eventName}
@@ -172,7 +178,7 @@ export function PredictionCardMarkup({
 
       {/* Footer */}
       <div style={{ display: "flex", flexDirection: "column", marginTop: "auto" }}>
-        <div style={{ display: "flex", fontSize: 34, fontWeight: 700 }}>WHO YOU GOT?</div>
+        <div style={{ display: "flex", fontSize: 34, fontWeight: 700 }}>{sd.cardFooter}</div>
         <div style={{ display: "flex", fontSize: 24, color: TEXT_MUTED, marginTop: 6 }}>
           {siteDomain}
         </div>

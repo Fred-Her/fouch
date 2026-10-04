@@ -1,4 +1,6 @@
-﻿/**
+﻿import type { Locale } from "@/lib/locale";
+
+/**
  * FOUCH Country Selector Globalization — the canonical, global list
  * of countries for user-identity metadata (the optional "your
  * country" field on a prediction). This is about the PREDICTOR, not
@@ -272,7 +274,30 @@ export const PREDICTOR_COUNTRIES: Array<{ code: string; name: string }> = [
  * code-to-name mapping in the app, never a second one. Returns null
  * for a code that isn't in the list (never fabricates a name).
  */
-export function getPredictorCountryName(code: string | null): string | null {
+export function getPredictorCountryName(code: string | null, locale: Locale = "en"): string | null {
   if (!code) return null;
-  return PREDICTOR_COUNTRIES.find((country) => country.code === code)?.name ?? null;
+  const englishName = PREDICTOR_COUNTRIES.find((country) => country.code === code)?.name ?? null;
+  if (!englishName) return null;
+  return getLocalizedCountryName(code, englishName, locale);
+}
+
+/**
+ * i18n v1: the human-readable country name in the viewer's language.
+ * English returns the existing English name untouched (so every
+ * current English surface — including DB roster names like "Czech
+ * Republic" — is byte-for-byte unchanged). Other locales use the
+ * platform's Intl.DisplayNames (CLDR data) and fall back to the
+ * English name whenever Intl has nothing useful (unknown/unofficial
+ * codes such as XK, or a runtime without that locale) — never a raw
+ * ISO code. No second country dataset is introduced.
+ */
+export function getLocalizedCountryName(code: string, englishName: string, locale: Locale): string {
+  if (locale === "en") return englishName;
+  try {
+    const localized = new Intl.DisplayNames([locale], { type: "region" }).of(code);
+    if (localized && localized !== code) return localized;
+  } catch {
+    // Unsupported locale/code in this runtime — fall through to English.
+  }
+  return englishName;
 }

@@ -7,12 +7,15 @@ export function LeaderboardRow({
   eventSlug,
   isViewer,
   prominent,
+  youLabel = "You",
 }: {
   entry: LeaderboardEntry;
   eventSlug: string;
   isViewer: boolean;
   /** Top 3 get slightly stronger typography — restrained, no medals. */
   prominent: boolean;
+  /** Localized "You" marker (i18n v1). */
+  youLabel?: string;
 }) {
   return (
     <TrackedLink
@@ -31,7 +34,7 @@ export function LeaderboardRow({
       <CountryFlag countryCode={entry.countryCode} className={prominent ? "text-2xl" : "text-lg"} />
       <span className={`flex-1 truncate text-text-primary ${prominent ? "text-lg" : "text-sm"}`}>
         {entry.nickname || "Anonymous"}
-        {isViewer ? <span className="ml-2 text-xs uppercase tracking-wide text-accent-strong">You</span> : null}
+        {isViewer ? <span className="ml-2 text-xs uppercase tracking-wide text-accent-strong">{youLabel}</span> : null}
       </span>
       <span className={`font-display text-text-primary ${prominent ? "text-2xl" : "text-base"}`}>
         {entry.score}

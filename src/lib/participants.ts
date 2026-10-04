@@ -1,6 +1,8 @@
 ﻿import "server-only";
 import type { Participant } from "@/types/participant";
 import { isSelectableStatus } from "@/lib/participant-status";
+import { localizeParticipant as localize } from "@/lib/participant-locale";
+import type { Locale } from "@/lib/locale";
 import { getAllEventParticipantRows, type EventParticipantRow } from "@/lib/event-participants-db";
 
 /**
@@ -102,12 +104,12 @@ function toParticipant(row: EventParticipantRow): Participant {
  * here â€” see resolveParticipantsByIds below for the separate,
  * status-blind lookup that historical rendering needs instead.
  */
-export async function getParticipantsForEvent(slug: string): Promise<ParticipantsForEvent | null> {
+export async function getParticipantsForEvent(slug: string, locale: Locale = "en"): Promise<ParticipantsForEvent | null> {
   const hardcoded = participantsByEventSlug[slug];
   if (hardcoded) {
     return {
       status: "demo",
-      participants: hardcoded.filter((participant) => participant.isActive),
+      participants: hardcoded.filter((participant) => participant.isActive).map((p) => localize(p, locale)),
       sourceCheckedAt: null,
     };
   }
@@ -124,7 +126,7 @@ export async function getParticipantsForEvent(slug: string): Promise<Participant
 
   return {
     status: "verified",
-    participants: active.map(toParticipant),
+    participants: active.map((row) => localize(toParticipant(row), locale)),
     sourceCheckedAt,
   };
 }
@@ -146,6 +148,7 @@ export async function getParticipantsForEvent(slug: string): Promise<Participant
 export async function resolveParticipantsByIds(
   eventSlug: string,
   participantIds: string[],
+  locale: Locale = "en",
 ): Promise<Map<string, Participant>> {
   const idSet = new Set(participantIds);
   const hardcoded = participantsByEventSlug[eventSlug];
@@ -153,7 +156,7 @@ export async function resolveParticipantsByIds(
   if (hardcoded) {
     const map = new Map<string, Participant>();
     for (const participant of hardcoded) {
-      if (idSet.has(participant.id)) map.set(participant.id, participant);
+      if (idSet.has(participant.id)) map.set(participant.id, localize(participant, locale));
     }
     return map;
   }
@@ -161,7 +164,7 @@ export async function resolveParticipantsByIds(
   const rows = await getAllEventParticipantRows(eventSlug);
   const map = new Map<string, Participant>();
   for (const row of rows) {
-    if (idSet.has(row.id)) map.set(row.id, toParticipant(row));
+    if (idSet.has(row.id)) map.set(row.id, localize(toParticipant(row), locale));
   }
   return map;
 }

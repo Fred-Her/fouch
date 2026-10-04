@@ -6,6 +6,8 @@ import { getOfficialResult } from "@/lib/results-db";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { getCrowdTopPicks } from "@/lib/crowd-picks";
 import { splitEventNameYear } from "@/lib/event-name-split";
+import { formatEventDayMonth } from "@/lib/event-time-display";
+import type { Locale } from "@/lib/locale";
 import { CinematicBackdrop } from "./CinematicBackdrop";
 import { CrowdPanel } from "./CrowdPanel";
 import { TrackedLink } from "./TrackedLink";
@@ -13,14 +15,13 @@ import { TrackedLink } from "./TrackedLink";
 export async function FeaturedEvent({
   event,
   dictionary,
+  locale = "en",
 }: {
   event: FouchEvent;
   dictionary: Dictionary;
+  locale?: Locale;
 }) {
-  const date = new Date(`${event.eventDate}T00:00:00Z`);
-  const dayMonth = date
-    .toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
-    .toUpperCase();
+  const dayMonth = formatEventDayMonth(event.eventDate, locale);
 
   // Sprint 5.1: the secondary leaderboard link is event/result-state
   // driven, never hardcoded to a specific slug — it only appears once
@@ -36,9 +37,9 @@ export async function FeaturedEvent({
   // NOW PREDICTING if its prediction window is closed").
   const lockConfig = await getEventLockConfig(event.slug);
   const isOpen = isPredictionWindowOpen(lockConfig, Date.now());
-  const eyebrow = isOpen ? "Now Predicting" : "Predictions Closed";
+  const eyebrow = isOpen ? dictionary.featuredEvent.eyebrowNow : dictionary.featuredEvent.eyebrowClosed;
 
-  const crowd = participantData ? await getCrowdTopPicks(event.slug, participantData.status) : null;
+  const crowd = participantData ? await getCrowdTopPicks(event.slug, participantData.status, 5, locale) : null;
 
   const { primary, year } = splitEventNameYear(event.name);
 
@@ -86,7 +87,7 @@ export async function FeaturedEvent({
               eventProperties={{ slug: event.slug }}
               className="group inline-flex items-center gap-2 rounded bg-accent px-8 py-5 text-lg font-medium text-on-accent shadow-[0_8px_40px_-8px_rgba(166,52,46,0.6)] transition-colors hover:bg-accent-strong"
             >
-              Make your Top 10
+              {dictionary.featuredEvent.cta}
               <ArrowRight
                 className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
                 aria-hidden
@@ -100,14 +101,14 @@ export async function FeaturedEvent({
                 eventProperties={{ event_slug: event.slug, source: "home" }}
                 className="text-sm text-text-secondary transition-colors hover:text-accent-strong"
               >
-                View leaderboard →
+                {dictionary.featuredEvent.viewLeaderboard}
               </TrackedLink>
             ) : null}
           </div>
         </div>
 
         {crowd ? (
-          <CrowdPanel crowd={crowd} eventSlug={event.slug} predictHref={`/predict/${event.slug}`} />
+          <CrowdPanel crowd={crowd} eventSlug={event.slug} predictHref={`/predict/${event.slug}`} dictionary={dictionary} />
         ) : null}
       </div>
     </section>

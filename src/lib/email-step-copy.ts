@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿/**
  * FOUCH 0.3A.1 — the entire copy decision for EmailStep's heading, in
  * one pure, unit-testable place. Extracted specifically so "create
  * flow says X" and "edit flow says Y" (brief §12 tests 7-8) can be
@@ -14,7 +14,12 @@
  */
 export type EmailStepMode = "create" | "edit";
 
-export function getEmailStepHeading(mode: EmailStepMode): string {
-  if (mode === "edit") return "Verify your email to save your changes.";
-  return "Verify your email to save your prediction.";
+export function getEmailStepHeading(
+  mode: EmailStepMode,
+  headings: { create: string; edit: string } = {
+    create: "Verify your email to save your prediction.",
+    edit: "Verify your email to save your changes.",
+  },
+): string {
+  return mode === "edit" ? headings.edit : headings.create;
 }

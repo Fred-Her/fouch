@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Nav() {
   return (
@@ -10,10 +11,7 @@ export function Nav() {
         >
           FOUCH
         </Link>
-        {/*
-          Sprint 0 intentionally has no other nav items: no login button
-          (auth doesn't exist yet), no links to pages that aren't built.
-        */}
+        <LanguageSwitcher />
       </div>
     </header>
   );

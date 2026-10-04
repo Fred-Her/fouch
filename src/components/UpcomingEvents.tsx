@@ -3,6 +3,8 @@ import type { Dictionary } from "@/content/types";
 import type { FouchEvent } from "@/types/event";
 import { splitEventNameYear } from "@/lib/event-name-split";
 import { getShortLocation } from "@/lib/event-location";
+import { formatEventDayMonth } from "@/lib/event-time-display";
+import type { Locale } from "@/lib/locale";
 import { CinematicBackdrop } from "./CinematicBackdrop";
 import { TrackedLink } from "./TrackedLink";
 
@@ -15,17 +17,22 @@ import { TrackedLink } from "./TrackedLink";
  * subtly different atmosphere from the featured section, derived only
  * from its position in the list, never from which event it is.
  */
-export function UpcomingEvents({ events, dictionary }: { events: FouchEvent[]; dictionary: Dictionary }) {
+export function UpcomingEvents({
+  events,
+  dictionary,
+  locale = "en",
+}: {
+  events: FouchEvent[];
+  dictionary: Dictionary;
+  locale?: Locale;
+}) {
   if (events.length === 0) return null;
 
   return (
     <>
       {events.map((event, index) => {
         const { primary, year } = splitEventNameYear(event.name);
-        const date = new Date(`${event.eventDate}T00:00:00Z`);
-        const dayMonth = date
-          .toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
-          .toUpperCase();
+        const dayMonth = formatEventDayMonth(event.eventDate, locale);
 
         return (
           <section key={event.slug} className="relative overflow-hidden py-8 sm:py-11">

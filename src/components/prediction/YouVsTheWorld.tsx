@@ -10,6 +10,8 @@ import {
 import type { FouchEvent } from "@/types/event";
 import { ShareYourCallCta } from "./ShareYourCallCta";
 import { YouVsTheWorldTracker } from "./YouVsTheWorldTracker";
+import { getI18n } from "@/lib/i18n-server";
+import { fmt } from "@/lib/i18n";
 
 function formatPct(pct: number): string {
   return `${Math.round(pct * 100)}%`;
@@ -38,6 +40,18 @@ export async function YouVsTheWorld({
   const bucket = getSampleSizeBucket(comparison.population);
   const mode = getComparisonDisplayMode(comparison.population);
   const pluralNoun = getEntryNoun(event, true);
+  const { locale, dict } = await getI18n();
+  const ct = dict.community;
+  // English keeps the event-configurable entry noun ("picks"); Spanish uses
+  // a fixed natural noun (predicción/predicciones).
+  const nounFor = (count: number) =>
+    locale === "en"
+      ? count === 1
+        ? pluralNoun.slice(0, -1)
+        : pluralNoun
+      : count === 1
+        ? ct.nounOne
+        : ct.nounMany;
 
   // FOUCH 0.3B: resolves every participant id this section could
   // possibly render â€” the viewer's own winner pick AND whatever ids
@@ -51,7 +65,7 @@ export async function YouVsTheWorld({
   if (comparison.boldestPick) idsToResolve.add(comparison.boldestPick.participantId);
   for (const entry of comparison.communityTop10) idsToResolve.add(entry.participantId);
 
-  const participantsById = await resolveParticipantsByIds(event.slug, Array.from(idsToResolve));
+  const participantsById = await resolveParticipantsByIds(event.slug, Array.from(idsToResolve), locale);
 
   return (
     <section className="mt-12 border-t border-border pt-10">
@@ -65,32 +79,31 @@ export async function YouVsTheWorld({
         hasCommunityTop10={comparison.communityTop10.length > 0}
       />
       <p className="font-display text-2xl uppercase tracking-tight text-text-primary">
-        You vs the World
+        {ct.youVsWorld}
       </p>
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-2 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo community data — not official {pluralNoun}
+          {fmt(ct.demoNote, { noun: locale === "en" ? pluralNoun : ct.nounMany })}
         </p>
       ) : null}
 
       {mode === "none" ? (
         <div className="mt-6">
-          <p className="font-display text-xl text-text-primary">You&apos;re early.</p>
-          <p className="mt-1 text-sm text-text-secondary">Be the first to set the pace.</p>
+          <p className="font-display text-xl text-text-primary">{ct.earlyTitle}</p>
+          <p className="mt-1 text-sm text-text-secondary">{ct.earlyBody}</p>
           <ShareYourCallCta />
         </div>
       ) : (
         <div className="mt-8 space-y-10">
           {bucket === "1_4" ? (
             <p className="text-sm text-text-muted">
-              The crowd is just forming — {comparison.population} other{" "}
-              {comparison.population === 1 ? pluralNoun.slice(0, -1) : pluralNoun} in so far.
+              {fmt(ct.forming, { n: comparison.population, noun: nounFor(comparison.population) })}
             </p>
           ) : null}
           {bucket === "5_9" ? (
             <p className="text-xs uppercase tracking-[0.15em] text-text-muted">
-              Early signal · based on {comparison.population} other predictions
+              {fmt(ct.earlySignal, { n: comparison.population })}
             </p>
           ) : null}
 
@@ -100,7 +113,7 @@ export async function YouVsTheWorld({
                 {formatRatio(comparison.sameWinner.count, comparison.population, mode)}
               </p>
               <p className="mt-1 text-sm uppercase tracking-[0.15em] text-text-secondary">
-                Same winner
+                {ct.sameWinner}
               </p>
               <p className="mt-2 text-text-primary">
                 <CountryFlag
@@ -112,10 +125,10 @@ export async function YouVsTheWorld({
                 </span>{" "}
                 —{" "}
                 {comparison.sameWinner.count === 0
-                  ? "nobody else made the same call."
+                  ? ct.nobodySameCall
                   : mode === "count"
-                    ? `${comparison.sameWinner.count} of ${comparison.population} other predictions agree.`
-                    : `${formatPct(comparison.sameWinner.pct)} of the world agrees. Based on ${comparison.population} other predictions.`}
+                    ? fmt(ct.sameWinnerCount, { count: comparison.sameWinner.count, total: comparison.population })
+                    : fmt(ct.sameWinnerPct, { pct: formatPct(comparison.sameWinner.pct), total: comparison.population })}
               </p>
             </div>
           ) : null}
@@ -126,10 +139,10 @@ export async function YouVsTheWorld({
                 {comparison.top3Match.overlap} / 3
               </p>
               <p className="mt-1 text-sm uppercase tracking-[0.15em] text-text-secondary">
-                Top 3 match
+                {ct.top3Match}
               </p>
               <p className="mt-2 text-text-primary">
-                You share {comparison.top3Match.overlap} of your top 3 with the world.
+                {fmt(ct.youShare, { n: comparison.top3Match.overlap })}
               </p>
             </div>
           ) : null}
@@ -146,21 +159,21 @@ export async function YouVsTheWorld({
                 </span>
               </p>
               <p className="mt-1 text-sm uppercase tracking-[0.15em] text-text-secondary">
-                Your boldest call
+                {ct.boldest}
               </p>
               <p className="mt-2 text-text-primary">
                 {mode === "count"
-                  ? `Only ${comparison.boldestPick.count} of ${comparison.population} other predictions have this in their top 10.`
-                  : `Only ${formatPct(comparison.boldestPick.inclusionPct)} of other predictions have this in their top 10.`}
+                  ? fmt(ct.boldestCount, { count: comparison.boldestPick.count, total: comparison.population })
+                  : fmt(ct.boldestPct, { pct: formatPct(comparison.boldestPick.inclusionPct) })}
               </p>
             </div>
           ) : null}
 
           {comparison.communityTop10.length > 0 ? (
             <div>
-              <p className="font-display text-xl text-text-primary">The world&apos;s top 10</p>
+              <p className="font-display text-xl text-text-primary">{ct.worldTop10}</p>
               <p className="mt-1 text-xs text-text-muted">
-                Ranked by how high each pick appears across predictions.
+                {ct.worldTop10Hint}
               </p>
               <ol className="mt-4 space-y-1.5">
                 {comparison.communityTop10.map((entry, index) => {
@@ -180,17 +193,16 @@ export async function YouVsTheWorld({
                         <span className="text-text-muted">· {participant.countryName}</span>
                       </span>
                       <span className="text-right text-xs text-text-muted">
-                        {formatRatio(entry.top10Count, comparison.population, mode)} picked
+                        {fmt(ct.picked, { ratio: formatRatio(entry.top10Count, comparison.population, mode) })}
                         <br />
-                        avg #{entry.averagePosition.toFixed(1)}
+                        {fmt(ct.avgPos, { n: entry.averagePosition.toFixed(1) })}
                       </span>
                     </li>
                   );
                 })}
               </ol>
               <p className="mt-2 text-xs text-text-muted">
-                Based on {comparison.population} other prediction
-                {comparison.population === 1 ? "" : "s"}.
+                {fmt(comparison.population === 1 ? ct.basedOnOne : ct.basedOnMany, { n: comparison.population })}
               </p>
             </div>
           ) : null}

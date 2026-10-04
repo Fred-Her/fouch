@@ -75,6 +75,7 @@ export type FouchAnalyticsEvent =
   | "prediction_card_generated"
   | "share_clicked"
   | "instagram_story_clicked"
+  | "language_changed"
   | "native_share_opened"
   | "copy_link_clicked"
   | "image_downloaded"
@@ -107,12 +108,29 @@ export type FouchAnalyticsEvent =
   | "verification_failed"
   | "duplicate_prediction_attempt";
 
+/**
+ * i18n v1: the UI language, attached as `locale` to EVERY tracked event
+ * (so the existing funnels — landing_view -> start_prediction ->
+ * prediction_submitted — can be broken down EN vs ES without renaming
+ * or duplicating any event). Set synchronously by I18nProvider before
+ * any child effect fires. Stays null (no property added) until set, so
+ * non-localized contexts and the original tests are unaffected. An
+ * explicit `locale` in a call's own properties always wins.
+ */
+let currentLocale: string | null = null;
+
+export function setAnalyticsLocale(locale: string | null) {
+  currentLocale = locale;
+}
+
 export function track(event: FouchAnalyticsEvent, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
 
+  const enriched = currentLocale ? { locale: currentLocale, ...(properties ?? {}) } : properties;
+
   try {
     if (ensurePostHogInitialized()) {
-      posthog.capture(event, properties);
+      posthog.capture(event, enriched);
       return;
     }
   } catch {
@@ -123,5 +141,5 @@ export function track(event: FouchAnalyticsEvent, properties?: Record<string, un
   // No PostHog key configured (or init/capture failed): preserve the
   // original, harmless console.debug behavior rather than losing
   // visibility entirely during local development or misconfiguration.
-  console.debug("[fouch:analytics]", event, properties ?? {});
+  console.debug("[fouch:analytics]", event, enriched ?? {});
 }

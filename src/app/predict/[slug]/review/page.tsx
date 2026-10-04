@@ -5,6 +5,9 @@ import { ArrowLeft } from "lucide-react";
 import { getEventBySlug } from "@/lib/events";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { ReviewContent } from "@/components/prediction/ReviewContent";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { getI18n } from "@/lib/i18n-server";
+import { fmt } from "@/lib/i18n";
 
 export async function generateMetadata({
   params,
@@ -14,8 +17,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const event = await getEventBySlug(slug);
   if (!event) return {};
+  const { dict } = await getI18n();
 
-  return { title: `Your Top 10 — ${event.name}` };
+  return { title: fmt(dict.review.metaTitle, { event: event.name }) };
 }
 
 const REQUIRED_SELECTIONS = 10;
@@ -26,28 +30,32 @@ export default async function ReviewPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const { locale, dict } = await getI18n();
   const event = await getEventBySlug(slug);
   if (!event) notFound();
 
-  const participantData = await getParticipantsForEvent(slug);
+  const participantData = await getParticipantsForEvent(slug, locale);
   if (!participantData || participantData.participants.length === 0) notFound();
 
   const requiredCount = Math.min(REQUIRED_SELECTIONS, participantData.participants.length);
 
   return (
     <main className="mx-auto max-w-content px-6 py-8">
-      <Link
-        href={`/predict/${slug}`}
-        className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to builder
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/predict/${slug}`}
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          {dict.builder.backToBuilder}
+        </Link>
+        <LanguageSwitcher eventSlug={slug} />
+      </div>
 
       <p className="mt-6 font-display text-sm tracking-[0.2em] text-text-muted">FOUCH</p>
       <h1 className="mt-1 font-display text-2xl text-text-primary sm:text-3xl">{event.name}</h1>
       <p className="mt-3 font-display text-xl uppercase tracking-tight text-text-primary">
-        Your Top {requiredCount}
+        {fmt(dict.review.yourTop, { n: requiredCount })}
       </p>
 
       <div className="mt-8">

@@ -1,5 +1,7 @@
 ﻿import { ImageResponse } from "next/og";
 import { getPredictionWithParticipants } from "@/lib/predictions-db";
+import { getLocale } from "@/lib/i18n-server";
+import { getDictionary } from "@/lib/i18n";
 
 export const runtime = "edge";
 export const size = { width: 1200, height: 630 };
@@ -11,7 +13,9 @@ export default async function OpengraphImage({
   params: Promise<{ publicId: string }>;
 }) {
   const { publicId } = await params;
-  const record = await getPredictionWithParticipants(publicId);
+  const locale = await getLocale();
+  const sd = getDictionary(locale).share;
+  const record = await getPredictionWithParticipants(publicId, locale);
 
   const ink = "#141318";
   const accent = "#A6342E";
@@ -42,7 +46,9 @@ export default async function OpengraphImage({
   }
 
   const top3 = record.rankedParticipants.slice(0, 3);
-  const heading = record.prediction.nickname ? `${record.prediction.nickname}'s Top 10` : "A Top 10 prediction";
+  const heading = record.prediction.nickname
+    ? sd.ogHeadingNamed.replace("{name}", record.prediction.nickname)
+    : sd.ogHeadingAnon;
 
   return new ImageResponse(
     (

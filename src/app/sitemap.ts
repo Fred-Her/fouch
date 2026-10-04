@@ -9,6 +9,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
+      // i18n v1: hreflang for the two locales of the home page. URLs
+      // stay on the canonical joinfouch.com origin (siteUrl).
+      alternates: { languages: { en: siteUrl, es: `${siteUrl}/es` } },
     },
   ];
 

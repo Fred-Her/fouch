@@ -7,6 +7,9 @@ import { getEventLeaderboard } from "@/lib/leaderboard-service";
 import { MIN_PERCENTILE_SAMPLE } from "@/lib/scoring";
 import { LeaderboardRow } from "@/components/scoring/LeaderboardRow";
 import { LeaderboardTracker } from "@/components/scoring/LeaderboardTracker";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { getI18n } from "@/lib/i18n-server";
+import { fmt } from "@/lib/i18n";
 
 // Sprint 5.1: this route reads Supabase state that changes independently
 // of any URL parameter (a new prediction being scored, a result being
@@ -22,15 +25,15 @@ export async function generateMetadata({
   const { slug } = await params;
   const event = await getEventBySlug(slug);
   if (!event) return {};
+  const { locale, dict } = await getI18n();
+  const lb = dict.leaderboard;
 
-  const participantData = await getParticipantsForEvent(slug);
+  const participantData = await getParticipantsForEvent(slug, locale);
   const isDemo = participantData?.status === "demo";
 
   return {
-    title: `${event.name} Predictions Leaderboard | FOUCH`,
-    description: isDemo
-      ? "A demo FOUCH predictions leaderboard — not an official result."
-      : "See how FOUCH predictions ranked after the result.",
+    title: fmt(lb.metaTitle, { event: event.name }),
+    description: isDemo ? lb.metaDemo : lb.metaLive,
     // Demo leaderboards should never be indexed as if they were real â€”
     // same non-indexing posture as public prediction pages (Sprint 2).
     robots: isDemo ? { index: false, follow: true } : undefined,
@@ -46,11 +49,13 @@ export default async function EventLeaderboardPage({
 }) {
   const { slug } = await params;
   const { from } = await searchParams;
+  const { locale, dict } = await getI18n();
+  const lb = dict.leaderboard;
 
   const event = await getEventBySlug(slug);
   if (!event) notFound();
 
-  const participantData = await getParticipantsForEvent(slug);
+  const participantData = await getParticipantsForEvent(slug, locale);
   if (!participantData) notFound();
 
   const leaderboard = await getEventLeaderboard(slug, participantData.status, from);
@@ -58,33 +63,36 @@ export default async function EventLeaderboardPage({
 
   return (
     <main className="mx-auto max-w-content px-6 py-8">
-      <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
-        FOUCH
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
+          {lb.back}
+        </Link>
+        <LanguageSwitcher eventSlug={slug} />
+      </div>
 
       <h1 className="mt-6 font-display text-2xl text-text-primary sm:text-3xl">{event.name}</h1>
       <p className="mt-1 font-display text-xl uppercase tracking-tight text-text-primary">
-        Event leaderboard
+        {lb.title}
       </p>
-      <p className="mt-2 text-sm text-text-secondary">See who called it best.</p>
+      <p className="mt-2 text-sm text-text-secondary">{lb.subtitle}</p>
 
       {participantData.status === "demo" ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo leaderboard — not an official outcome
+          {lb.demoNote}
         </p>
       ) : null}
 
       {leaderboard.status === "no_result" ? (
         <div className="mt-10 rounded border border-border bg-surface p-6">
-          <p className="font-display text-xl text-text-primary">Leaderboard locked</p>
+          <p className="font-display text-xl text-text-primary">{lb.locked}</p>
           <p className="mt-2 text-sm text-text-secondary">
-            Results will appear here once {event.name} has been scored.
+            {fmt(lb.lockedBody, { event: event.name })}
           </p>
           <Link
             href={`/predict/${slug}`}
             className="mt-5 inline-flex items-center justify-center rounded bg-accent px-6 py-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
           >
-            Make your call
+            {lb.makeCall}
           </Link>
         </div>
       ) : (
@@ -98,30 +106,30 @@ export default async function EventLeaderboardPage({
           />
 
           {leaderboard.totalCount === 0 ? (
-            <p className="text-sm text-text-muted">No scored predictions yet.</p>
+            <p className="text-sm text-text-muted">{lb.none}</p>
           ) : leaderboard.totalCount === 1 ? (
-            <p className="text-sm text-text-muted">First call on the board.</p>
+            <p className="text-sm text-text-muted">{lb.first}</p>
           ) : leaderboard.totalCount <= 4 ? (
-            <p className="text-sm text-text-muted">The leaderboard is just getting started.</p>
+            <p className="text-sm text-text-muted">{lb.starting}</p>
           ) : null}
 
           {leaderboard.viewer ? (
             <div className="mt-6 rounded border border-accent/40 bg-accent/10 p-5">
               <p className="text-xs font-medium uppercase tracking-[0.15em] text-text-secondary">
-                Your finish
+                {lb.yourFinish}
               </p>
               <p className="mt-2 font-display text-4xl text-accent-strong">
-                #{leaderboard.viewer.entry.rank} of {leaderboard.totalCount}
+                {fmt(lb.rankOf, { rank: leaderboard.viewer.entry.rank, total: leaderboard.totalCount })}
               </p>
               <p className="mt-1 text-sm text-text-secondary">
-                Fouch score {leaderboard.viewer.entry.score}
+                {fmt(lb.scoreLine, { score: leaderboard.viewer.entry.score })}
                 {leaderboard.viewer.percentile.percentile !== null
-                  ? ` · Top ${Math.max(1, Math.round(100 - leaderboard.viewer.percentile.percentile))}%`
+                  ? ` · ${fmt(lb.topPct, { n: Math.max(1, Math.round(100 - leaderboard.viewer.percentile.percentile)) })}`
                   : ""}
               </p>
               {leaderboard.viewer.percentile.percentile === null ? (
                 <p className="mt-1 text-xs text-text-muted">
-                  World ranking unlocks at {MIN_PERCENTILE_SAMPLE} predictions.
+                  {fmt(lb.worldUnlocks, { n: MIN_PERCENTILE_SAMPLE })}
                 </p>
               ) : null}
             </div>
@@ -136,6 +144,7 @@ export default async function EventLeaderboardPage({
                     eventSlug={slug}
                     isViewer={entry.publicId === from}
                     prominent={entry.rank <= 3}
+                    youLabel={lb.you}
                   />
                 </li>
               ))}
@@ -145,7 +154,7 @@ export default async function EventLeaderboardPage({
           {leaderboard.viewer && leaderboard.viewer.neighbors.length > 0 ? (
             <div className="mt-8 border-t border-border pt-6">
               <p className="text-xs font-medium uppercase tracking-[0.15em] text-text-muted">
-                Your neighborhood
+                {lb.neighborhood}
               </p>
               <ol className="mt-3 space-y-2">
                 {leaderboard.viewer.neighbors.map((entry) => (
@@ -155,6 +164,7 @@ export default async function EventLeaderboardPage({
                       eventSlug={slug}
                       isViewer={entry.publicId === from}
                       prominent={false}
+                      youLabel={lb.you}
                     />
                   </li>
                 ))}

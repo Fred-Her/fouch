@@ -4,6 +4,7 @@ import { computeCommunityTop10 } from "@/lib/community-comparison";
 import { resolveParticipantsByIds } from "@/lib/participants";
 import type { ParticipantDataStatus } from "@/lib/participants";
 import type { Participant } from "@/types/participant";
+import type { Locale } from "@/lib/locale";
 
 export interface CrowdTopPick {
   participant: Participant;
@@ -37,6 +38,7 @@ export async function getCrowdTopPicks(
   eventSlug: string,
   dataStatus: ParticipantDataStatus,
   limit = 5,
+  locale: Locale = "en",
 ): Promise<CrowdTopPicks> {
   const eligible = await getEligiblePredictionsForComparison(eventSlug, dataStatus);
   const population = eligible.length;
@@ -47,6 +49,7 @@ export async function getCrowdTopPicks(
   const participantsById = await resolveParticipantsByIds(
     eventSlug,
     ranked.map((entry) => entry.participantId),
+    locale,
   );
 
   const picks: CrowdTopPick[] = [];

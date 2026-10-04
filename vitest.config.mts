@@ -9,7 +9,12 @@
 // `window`/`sessionStorage` (attribution.ts, analytics.ts). jsdom is a
 // safe superset for the existing pure-Node tests too (scoring,
 // leaderboard, community-comparison never reference window).
+// i18n v1: the app's tsconfig uses "jsx": "preserve" (Next compiles JSX
+// itself), which Vite can't parse. Enabling the automatic JSX runtime for
+// tests ONLY lets the localized share-card markup be rendered and
+// asserted directly. It does not touch the Next.js build.
 export default defineConfig({
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     environment: "jsdom",
   },

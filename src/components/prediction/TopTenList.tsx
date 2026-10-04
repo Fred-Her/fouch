@@ -3,6 +3,8 @@
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { CountryFlag } from "@/components/CountryFlag";
 import type { Participant } from "@/types/participant";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
 
 export function TopTenList({
   rankedParticipants,
@@ -17,10 +19,13 @@ export function TopTenList({
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
 }) {
+  const { dict } = useI18n();
+  const t = dict.builder;
+
   if (rankedParticipants.length === 0) {
     return (
       <p className="rounded border border-dashed border-border-strong px-4 py-6 text-sm text-text-muted">
-        Tap a country below to give it position 01.
+        {t.emptyList}
       </p>
     );
   }
@@ -42,9 +47,9 @@ export function TopTenList({
           {!participant.isActive ? (
             <span
               className="shrink-0 rounded border border-accent-strong px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-accent-strong"
-              title="No longer available — remove and pick a current contestant to save changes."
+              title={t.replaceTitle}
             >
-              Replace
+              {t.replaceBadge}
             </span>
           ) : null}
 
@@ -53,7 +58,7 @@ export function TopTenList({
               type="button"
               onClick={() => onMoveUp(index)}
               disabled={index === 0}
-              aria-label={`Move ${participant.displayName} up, currently position ${index + 1} of ${requiredCount}`}
+              aria-label={fmt(t.moveUpAria, { name: participant.displayName, pos: index + 1, total: requiredCount })}
               className="rounded p-2 text-text-secondary transition-colors hover:bg-surface-raised disabled:opacity-30"
             >
               <ChevronUp className="h-4 w-4" aria-hidden />
@@ -62,7 +67,7 @@ export function TopTenList({
               type="button"
               onClick={() => onMoveDown(index)}
               disabled={index === rankedParticipants.length - 1}
-              aria-label={`Move ${participant.displayName} down, currently position ${index + 1} of ${requiredCount}`}
+              aria-label={fmt(t.moveDownAria, { name: participant.displayName, pos: index + 1, total: requiredCount })}
               className="rounded p-2 text-text-secondary transition-colors hover:bg-surface-raised disabled:opacity-30"
             >
               <ChevronDown className="h-4 w-4" aria-hidden />
@@ -70,7 +75,7 @@ export function TopTenList({
             <button
               type="button"
               onClick={() => onRemove(participant.id)}
-              aria-label={`Remove ${participant.displayName} from your Top ${requiredCount}`}
+              aria-label={fmt(t.removeAria, { name: participant.displayName, total: requiredCount })}
               className="rounded p-2 text-text-secondary transition-colors hover:bg-surface-raised hover:text-accent-strong"
             >
               <X className="h-4 w-4" aria-hidden />

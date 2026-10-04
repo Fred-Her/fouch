@@ -15,6 +15,9 @@ import { TopTenList } from "./TopTenList";
 import { ParticipantBrowser } from "./ParticipantBrowser";
 import { EmailStep } from "./EmailStep";
 import { OtpStep } from "./OtpStep";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
+import { translateServerError } from "@/lib/server-error-i18n";
 
 type Step = "edit" | "email" | "otp";
 
@@ -57,6 +60,8 @@ export function EditPredictionFlow({
    * event-time-display.ts). */
   predictionTimezone: string | null;
 }) {
+  const { locale, dict } = useI18n();
+  const bt = dict.builder;
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>(
     initialRankedParticipants.map((participant) => participant.id),
@@ -245,14 +250,14 @@ export function EditPredictionFlow({
     <div className="mt-6">
       {predictionLockAt ? (
         <p className="mb-4 text-xs text-text-muted">
-          You can update your picks until {formatEventLocalLockTime(predictionLockAt, predictionTimezone)}.
+          {fmt(dict.publicPrediction.updateUntil, { when: formatEventLocalLockTime(predictionLockAt, predictionTimezone, locale) })}
         </p>
       ) : null}
 
       {step === "edit" ? (
         <div className="lg:grid lg:grid-cols-[380px_1fr] lg:gap-10">
-          <section aria-label="Your Top 10" className="lg:sticky lg:top-20 lg:self-start">
-            <h2 className="font-display text-lg text-text-primary">Your Top {requiredCount}</h2>
+          <section aria-label={fmt(bt.yourTop, { n: requiredCount })} className="lg:sticky lg:top-20 lg:self-start">
+            <h2 className="font-display text-lg text-text-primary">{fmt(bt.yourTop, { n: requiredCount })}</h2>
             <div className="mt-3">
               <TopTenList
                 rankedParticipants={rankedParticipants}
@@ -271,19 +276,19 @@ export function EditPredictionFlow({
                   disabled={!canSave}
                   className="mt-6 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
-                  Save my Top {requiredCount}
+                  {fmt(dict.review.saveCta, { n: requiredCount })}
                 </button>
                 {hasUnavailableSelection ? (
                   <p className="mt-2 text-xs text-text-muted">
-                    Replace the contestant marked &quot;Replace&quot; with a current one to save your changes.
+                    {bt.replaceHint}
                   </p>
                 ) : null}
               </>
             ) : null}
           </section>
 
-          <section aria-label="All contestants" className="mt-10 lg:mt-0">
-            <h2 className="font-display text-lg text-text-primary">All contestants</h2>
+          <section aria-label={bt.allContestants} className="mt-10 lg:mt-0">
+            <h2 className="font-display text-lg text-text-primary">{bt.allContestants}</h2>
             <div className="mt-3">
               <ParticipantBrowser
                 participants={allParticipants}
@@ -304,7 +309,7 @@ export function EditPredictionFlow({
         <div className="mt-8 border-t border-border pt-6">
           {otpError ? (
             <p className="text-sm text-accent-strong" role="alert" aria-live="polite">
-              {otpError}
+              {translateServerError(otpError, locale)}
             </p>
           ) : null}
           <button
@@ -313,7 +318,7 @@ export function EditPredictionFlow({
             onClick={handleRetry}
             className="mt-4 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
-            {otpSubmitting ? "Trying againâ€¦" : "Try again"}
+            {otpSubmitting ? dict.review.tryingAgain : dict.review.tryAgain}
           </button>
         </div>
       ) : step === "otp" ? (

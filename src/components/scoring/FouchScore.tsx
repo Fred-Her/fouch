@@ -7,18 +7,13 @@ import { siteUrl } from "@/lib/site";
 import { CountryFlag } from "@/components/CountryFlag";
 import type { PredictionRecord } from "@/lib/predictions-db";
 import type { FouchEvent } from "@/types/event";
-import type { ScoreBand } from "@/types/scoring";
 import { FouchScoreTracker } from "./FouchScoreTracker";
 import { ShareActions } from "@/components/prediction/ShareActions";
 import { TrackedLink } from "@/components/TrackedLink";
+import { getI18n } from "@/lib/i18n-server";
+import { fmt } from "@/lib/i18n";
+import { localizePath } from "@/lib/locale";
 
-const BAND_LABEL: Record<ScoreBand, string> = {
-  MISSED_IT: "Missed it",
-  FAIR: "Fair call",
-  GOOD: "Good call",
-  EXCELLENT: "Excellent call",
-  ELITE: "Elite call",
-};
 
 /** "8.333..." -> "8.3", "25.0" -> "25" â€” one decimal, no trailing ".0". */
 function formatPoints(value: number): string {
@@ -45,6 +40,7 @@ export async function FouchScore({
   event: FouchEvent;
   publicId: string;
 }) {
+  const { locale, dict } = await getI18n();
   const result = await getPredictionScore(
     prediction.id,
     prediction.rankedParticipantIds,
@@ -66,12 +62,13 @@ export async function FouchScore({
   if (prediction.rankedParticipantIds[0]) idsToResolve.add(prediction.rankedParticipantIds[0]);
   if (official) idsToResolve.add(official.winner);
 
-  const participantsById = await resolveParticipantsByIds(event.slug, Array.from(idsToResolve));
+  const participantsById = await resolveParticipantsByIds(event.slug, Array.from(idsToResolve), locale);
   const userWinnerPick = prediction.rankedParticipantIds[0]
     ? participantsById.get(prediction.rankedParticipantIds[0])
     : undefined;
   const actualWinner = official ? participantsById.get(official.winner) : undefined;
   const pluralNoun = getEntryNoun(event, true);
+  const st = dict.score;
   const { breakdown, percentile } = result;
   const { winner, podium, top5, top10, ranking } = breakdown.components;
 
@@ -84,34 +81,37 @@ export async function FouchScore({
         dataStatus={prediction.dataStatus}
       />
 
-      <p className="text-xs font-medium uppercase tracking-[0.15em] text-text-muted">Fouch score</p>
+      <p className="text-xs font-medium uppercase tracking-[0.15em] text-text-muted">{st.title}</p>
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-2 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo result — not an official outcome
+          {st.demoResult}
         </p>
       ) : null}
 
       <p className="mt-3 font-display text-7xl text-accent-strong">{breakdown.displayScore}</p>
       <p className="mt-1 font-display text-2xl uppercase tracking-tight text-text-primary">
-        {BAND_LABEL[breakdown.band]}
+        {st.bands[breakdown.band]}
       </p>
 
       {percentile.percentile !== null ? (
         <p className="mt-2 text-sm text-text-secondary">
-          You beat {Math.round(percentile.percentile)}% of {pluralNoun === "picks" ? "predictions" : pluralNoun} for
-          this event, based on {percentile.population} other predictions.
+          {fmt(st.beat, {
+            pct: Math.round(percentile.percentile),
+            noun: locale === "en" ? (pluralNoun === "picks" ? "predictions" : pluralNoun) : "predicciones",
+            n: percentile.population,
+          })}
         </p>
       ) : (
         <p className="mt-2 text-xs text-text-muted">
-          World ranking unlocks at {MIN_PERCENTILE_SAMPLE} predictions.
+          {fmt(st.worldUnlocks, { n: MIN_PERCENTILE_SAMPLE })}
         </p>
       )}
 
       <dl className="mt-6 space-y-3 text-sm">
         <div className="border-b border-border pb-3">
           <dt className="flex items-center justify-between">
-            <span className="text-text-secondary">Winner</span>
+            <span className="text-text-secondary">{st.winner}</span>
             <span className="text-text-muted">{formatPoints(winner.earned)} / {winner.max}</span>
           </dt>
           <dd className="mt-2">
@@ -125,13 +125,13 @@ export async function FouchScore({
                     <span className="text-text-muted">· {userWinnerPick.countryName}</span>
                   </>
                 ) : (
-                  "Correct"
+                  st.correct
                 )}
               </span>
             ) : (
               <div className="space-y-1 text-text-primary">
                 <p className="flex items-center gap-1.5">
-                  <span className="text-text-muted">✗ Missed — your pick:</span>
+                  <span className="text-text-muted">{st.missed}</span>
                   {userWinnerPick ? (
                     <>
                       <CountryFlag countryCode={userWinnerPick.countryCode} />
@@ -144,7 +144,7 @@ export async function FouchScore({
                 </p>
                 {actualWinner ? (
                   <p className="flex items-center gap-1.5 text-text-secondary">
-                    <span className="text-text-muted">Actual:</span>
+                    <span className="text-text-muted">{st.actual}</span>
                     <CountryFlag countryCode={actualWinner.countryCode} />
                     {actualWinner.displayName}
                     <span className="text-text-muted">· {actualWinner.countryName}</span>
@@ -156,31 +156,31 @@ export async function FouchScore({
         </div>
 
         <div className="flex items-center justify-between border-b border-border pb-3">
-          <dt className="text-text-secondary">Podium</dt>
+          <dt className="text-text-secondary">{st.podium}</dt>
           <dd className="text-text-primary">
             {podium.hits} of {podium.total} · {formatPoints(podium.earned)} / {podium.max}
           </dd>
         </div>
         <div className="flex items-center justify-between border-b border-border pb-3">
-          <dt className="text-text-secondary">Top 5</dt>
+          <dt className="text-text-secondary">{st.top5}</dt>
           <dd className="text-text-primary">
             {top5.hits} of {top5.total} · {formatPoints(top5.earned)} / {top5.max}
           </dd>
         </div>
         <div className="flex items-center justify-between border-b border-border pb-3">
-          <dt className="text-text-secondary">Top 10</dt>
+          <dt className="text-text-secondary">{st.top10}</dt>
           <dd className="text-text-primary">
             {top10.hits} of {top10.total} · {formatPoints(top10.earned)} / {top10.max}
           </dd>
         </div>
         <div>
           <div className="flex items-center justify-between">
-            <dt className="text-text-secondary">Ranking</dt>
+            <dt className="text-text-secondary">{st.ranking}</dt>
             <dd className="text-text-primary">
               {formatPoints(ranking.earned)} / {ranking.max}
             </dd>
           </div>
-          <p className="mt-1 text-xs text-text-muted">How close your picks were to the official finish.</p>
+          <p className="mt-1 text-xs text-text-muted">{st.closeness}</p>
         </div>
       </dl>
 
@@ -191,20 +191,20 @@ export async function FouchScore({
           eventProperties={{ event_slug: event.slug }}
           className="inline-flex items-center justify-center rounded border border-border-strong px-6 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
         >
-          See where you finished
+          {st.seeFinish}
         </TrackedLink>
       </div>
 
       <div className="mt-8">
-        <p className="font-display text-lg text-text-primary">Share your result</p>
+        <p className="font-display text-lg text-text-primary">{dict.share.shareResult}</p>
         <div className="mt-3">
           <ShareActions
             variant="result"
             eventSlug={event.slug}
             publicId={publicId}
-            publicUrl={`${siteUrl}/p/${publicId}`}
-            storyCardUrl={`/p/${publicId}/result-card/story`}
-            postCardUrl={`/p/${publicId}/result-card/post`}
+            publicUrl={`${siteUrl}${localizePath(`/p/${publicId}`, locale)}`}
+            storyCardUrl={`${localizePath(`/p/${publicId}`, locale)}/result-card/story`}
+            postCardUrl={`${localizePath(`/p/${publicId}`, locale)}/result-card/post`}
           />
         </div>
       </div>

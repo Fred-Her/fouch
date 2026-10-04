@@ -20,6 +20,9 @@ import type { Participant } from "@/types/participant";
 import { SubmitPanel } from "./SubmitPanel";
 import { EmailStep } from "./EmailStep";
 import { OtpStep } from "./OtpStep";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
+import { translateServerError } from "@/lib/server-error-i18n";
 
 type Step = "review" | "email" | "otp";
 
@@ -42,6 +45,8 @@ export function ReviewContent({
   participants: Participant[];
   requiredCount: number;
 }) {
+  const { locale, dict } = useI18n();
+  const rt = dict.review;
   const router = useRouter();
   const [rankedIds, setRankedIds] = useState<string[] | null>(null);
   const [checkingExisting, setCheckingExisting] = useState(true);
@@ -218,13 +223,13 @@ export function ReviewContent({
     return (
       <div>
         <p className="text-text-secondary">
-          We don&apos;t have a complete prediction for this event yet on this device.
+          {rt.incomplete}
         </p>
         <Link
           href={`/predict/${eventSlug}`}
           className="mt-4 inline-flex items-center gap-2 rounded bg-accent px-6 py-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
         >
-          Build your Top {requiredCount}
+          {fmt(rt.buildCta, { n: requiredCount })}
         </Link>
       </div>
     );
@@ -255,7 +260,7 @@ export function ReviewContent({
           className="mt-6 inline-flex items-center gap-2 rounded border border-border-strong px-6 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
         >
           <Pencil className="h-4 w-4" aria-hidden />
-          Edit my Top {requiredCount}
+          {fmt(rt.editCta, { n: requiredCount })}
         </Link>
       ) : null}
 
@@ -276,7 +281,7 @@ export function ReviewContent({
         <div className="mt-8 border-t border-border pt-6">
           {otpError ? (
             <p className="text-sm text-accent-strong" role="alert" aria-live="polite">
-              {otpError}
+              {translateServerError(otpError, locale)}
             </p>
           ) : null}
           <button
@@ -285,7 +290,7 @@ export function ReviewContent({
             onClick={handleRetryLock}
             className="mt-4 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
-            {otpSubmitting ? "Trying again…" : "Try again"}
+            {otpSubmitting ? rt.tryingAgain : rt.tryAgain}
           </button>
         </div>
       ) : step === "otp" ? (

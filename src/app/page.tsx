@@ -1,4 +1,4 @@
-﻿import { en } from "@/content/en";
+﻿import { getI18n } from "@/lib/i18n-server";
 import { getFeaturedEvent, getSecondaryUpcomingEvents } from "@/lib/events";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { Nav } from "@/components/Nav";
@@ -16,6 +16,7 @@ import { ViewTracker } from "@/components/ViewTracker";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const { locale, dict } = await getI18n();
   const featuredEvent = await getFeaturedEvent();
   const upcomingEvents = await getSecondaryUpcomingEvents(featuredEvent?.slug ?? null);
 
@@ -30,15 +31,15 @@ export default async function Home() {
       <ViewTracker event="landing_view" />
       <Nav />
       <main>
-        <Hero dictionary={en} eventSlug={featuredEvent?.slug ?? null} predictionsOpen={predictionsOpen} />
+        <Hero dictionary={dict} eventSlug={featuredEvent?.slug ?? null} predictionsOpen={predictionsOpen} />
         {featuredEvent ? (
-          <FeaturedEvent event={featuredEvent} dictionary={en} />
+          <FeaturedEvent event={featuredEvent} dictionary={dict} locale={locale} />
         ) : null}
-        <UpcomingEvents events={upcomingEvents} dictionary={en} />
-        <HowItWorks dictionary={en} />
-        <ClosingMoment eventSlug={featuredEvent?.slug ?? null} />
+        <UpcomingEvents events={upcomingEvents} dictionary={dict} locale={locale} />
+        <HowItWorks dictionary={dict} />
+        <ClosingMoment eventSlug={featuredEvent?.slug ?? null} dictionary={dict} />
       </main>
-      <Footer dictionary={en} />
+      <Footer dictionary={dict} />
     </>
   );
 }

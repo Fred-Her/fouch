@@ -1,4 +1,6 @@
-﻿/**
+﻿import type { Locale } from "@/lib/locale";
+
+/**
  * FOUCH 0.3A.1 â€” pure, DB-free display formatting for the prediction
  * lock instant. Deliberately separate from prediction-lock-logic.ts:
  * that file decides WHETHER predictions are open (authorization,
@@ -37,11 +39,23 @@ export function deriveLocationLabel(timeZone: string): string {
  * timezone) â€” this is about freshness of a roster list, not a
  * lock-timing instant, so it doesn't need event-local precision.
  */
-export function formatContestantListUpdated(sourceCheckedAtIso: string): string {
-  const formatted = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(
-    new Date(sourceCheckedAtIso),
-  );
-  return `Contestant list updated ${formatted}`;
+export function formatContestantListUpdated(
+  sourceCheckedAtIso: string,
+  template = "Contestant list updated {date}",
+  locale: Locale = "en",
+): string {
+  const formatted = new Intl.DateTimeFormat(locale === "es" ? "es" : "en-US", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(sourceCheckedAtIso));
+  return template.replace("{date}", formatted);
+}
+
+/** "OCT 10" / "10 OCT" — the compact event date on the Home cards. */
+export function formatEventDayMonth(eventDate: string, locale: Locale = "en"): string {
+  return new Date(`${eventDate}T00:00:00Z`)
+    .toLocaleDateString(locale === "es" ? "es" : "en-US", { month: "short", day: "numeric", timeZone: "UTC" })
+    .toUpperCase();
 }
 
 /**
@@ -56,8 +70,32 @@ export function formatContestantListUpdated(sourceCheckedAtIso: string): string 
  * to an explicit UTC-labeled rendering â€” still unambiguous, never a
  * silently-assumed local time.
  */
-export function formatEventLocalLockTime(isoDateTime: string, timeZone: string | null): string {
+export function formatEventLocalLockTime(
+  isoDateTime: string,
+  timeZone: string | null,
+  locale: Locale = "en",
+): string {
   const date = new Date(isoDateTime);
+
+  // i18n v1: Spanish uses the platform's own locale-aware pattern
+  // (e.g. "10 oct, 12:00 a. m. GMT+7"); English keeps the exact
+  // "Oct 10 at 12:00 AM GMT+7" composition below, unchanged. Only the
+  // PRESENTATION changes — the instant being formatted never does.
+  if (locale !== "en") {
+    try {
+      const rendered = new Intl.DateTimeFormat(locale, {
+        timeZone: timeZone ?? "UTC",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }).format(date);
+      return timeZone ? `${rendered} (${deriveLocationLabel(timeZone)})` : rendered;
+    } catch {
+      // Invalid timezone/locale — fall through to the English composition.
+    }
+  }
   const zoneForFormatting = timeZone ?? "UTC";
 
   let parts: Intl.DateTimeFormatPart[];

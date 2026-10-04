@@ -9,6 +9,10 @@ import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { getOfficialResult } from "@/lib/results-db";
 import { formatContestantListUpdated } from "@/lib/event-time-display";
 import { getPredictorCountryName } from "@/lib/countries";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { getI18n } from "@/lib/i18n-server";
+import { fmt } from "@/lib/i18n";
+import { localizePath } from "@/lib/locale";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
 import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
 import { FouchScore } from "@/components/scoring/FouchScore";
@@ -20,13 +24,18 @@ export async function generateMetadata({
   params: Promise<{ publicId: string }>;
 }): Promise<Metadata> {
   const { publicId } = await params;
-  const record = await getPredictionWithParticipants(publicId);
+  const { locale, dict } = await getI18n();
+  const record = await getPredictionWithParticipants(publicId, locale);
   if (!record) return {};
 
+  const t = dict.publicPrediction;
   const title = record.prediction.nickname
-    ? `${record.prediction.nickname}'s Top 10 — ${record.event.name}`
-    : `A Top 10 prediction — ${record.event.name}`;
-  const description = "See the prediction, then make your own call.";
+    ? fmt(t.metaTitleNamed, { name: record.prediction.nickname, event: record.event.name })
+    : fmt(t.metaTitleAnon, { event: record.event.name });
+  const description = t.metaDescription;
+  // The Spanish page advertises its own /es URL and /es OG image; both
+  // resolve to the same prediction as the unprefixed ones.
+  const publicPath = localizePath(`/p/${publicId}`, locale);
 
   return {
     title,
@@ -40,8 +49,8 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `${siteUrl}/p/${publicId}`,
-      images: [`${siteUrl}/p/${publicId}/opengraph-image`],
+      url: `${siteUrl}${publicPath}`,
+      images: [`${siteUrl}${publicPath}/opengraph-image`],
     },
     twitter: {
       card: "summary_large_image",
@@ -57,11 +66,14 @@ export default async function PublicPredictionPage({
   params: Promise<{ publicId: string }>;
 }) {
   const { publicId } = await params;
-  const record = await getPredictionWithParticipants(publicId);
+  const { locale, dict } = await getI18n();
+  const record = await getPredictionWithParticipants(publicId, locale);
   if (!record) notFound();
 
   const { prediction, event, rankedParticipants } = record;
-  const heading = prediction.nickname ? `${prediction.nickname}'s Top 10` : "Someone's Top 10";
+  const heading = prediction.nickname
+    ? fmt(dict.publicPrediction.titleWithName, { name: prediction.nickname })
+    : dict.publicPrediction.titleAnonymous;
 
   // Cheap existence check only (no percentile/breakdown work) â€” used
   // purely to decide share-CTA hierarchy (Sprint 4.1 Â§7-8). FouchScore
@@ -83,14 +95,17 @@ export default async function PublicPredictionPage({
   // non-demo event with verified-roster provenance â€” never "Demo
   // prediction" for one of these. Null (no participant rows checked
   // yet, or a hardcoded/demo event) simply shows nothing extra here.
-  const participantData = await getParticipantsForEvent(event.slug);
+  const participantData = await getParticipantsForEvent(event.slug, locale);
   const sourceCheckedAt = participantData?.sourceCheckedAt ?? null;
 
   return (
     <main className="mx-auto max-w-content px-6 py-8">
-      <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
-        FOUCH
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">
+          FOUCH
+        </Link>
+        <LanguageSwitcher eventSlug={event.slug} />
+      </div>
 
       <h1 className="mt-6 font-display text-2xl text-text-primary sm:text-3xl">{event.name}</h1>
       <p className="mt-2 font-display text-xl uppercase tracking-tight text-text-primary">
@@ -100,17 +115,17 @@ export default async function PublicPredictionPage({
       {prediction.countryCode ? (
         <p className="mt-1 flex items-center gap-1.5 text-sm text-text-muted">
           <CountryFlag countryCode={prediction.countryCode} />
-          {getPredictorCountryName(prediction.countryCode)}
+          {getPredictorCountryName(prediction.countryCode, locale)}
         </p>
       ) : null}
 
       {prediction.dataStatus === "demo" ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          Demo prediction — not the official lineup
+          {dict.publicPrediction.demoBanner}
         </p>
       ) : sourceCheckedAt ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
-          {formatContestantListUpdated(sourceCheckedAt)}
+          {formatContestantListUpdated(sourceCheckedAt, dict.builder.listUpdated, locale)}
         </p>
       ) : null}
 

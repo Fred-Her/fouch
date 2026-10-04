@@ -1,7 +1,10 @@
-﻿﻿"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { PREDICTOR_COUNTRIES } from "@/lib/countries";
+import { PREDICTOR_COUNTRIES, getLocalizedCountryName } from "@/lib/countries";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
+import { translateServerError } from "@/lib/server-error-i18n";
 
 export function SubmitPanel({
   requiredCount,
@@ -16,31 +19,37 @@ export function SubmitPanel({
 }) {
   const [nickname, setNickname] = useState("");
   const [countryCode, setCountryCode] = useState("");
+  const { locale, dict } = useI18n();
+  const t = dict.review;
+  const countryOptions = PREDICTOR_COUNTRIES.map((country) => ({
+    code: country.code,
+    name: getLocalizedCountryName(country.code, country.name, locale),
+  })).sort((a, b) => a.name.localeCompare(b.name, locale));
 
   return (
     <div className="mt-8 border-t border-border pt-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="text-sm text-text-secondary">Nickname</span>
+          <span className="text-sm text-text-secondary">{t.nickname}</span>
           <input
             type="text"
             value={nickname}
             onChange={(event) => setNickname(event.target.value)}
             maxLength={24}
-            placeholder="Optional"
+            placeholder={t.optional}
             className="mt-1.5 w-full rounded border border-border bg-surface px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent"
           />
         </label>
 
         <label className="block">
-          <span className="text-sm text-text-secondary">Country</span>
+          <span className="text-sm text-text-secondary">{t.country}</span>
           <select
             value={countryCode}
             onChange={(event) => setCountryCode(event.target.value)}
             className="mt-1.5 w-full rounded border border-border bg-surface px-3 py-2.5 text-sm text-text-primary focus:border-accent"
           >
-            <option value="">Optional</option>
-            {PREDICTOR_COUNTRIES.map((country) => (
+            <option value="">{t.optional}</option>
+            {countryOptions.map((country) => (
               <option key={country.code} value={country.code}>
                 {country.name}
               </option>
@@ -50,13 +59,12 @@ export function SubmitPanel({
       </div>
 
       <p className="mt-2 text-xs text-text-muted">
-        Optional — shown publicly with your prediction. You can update your picks until predictions
-        close.
+        {t.optionalNote}
       </p>
 
       {errorMessage ? (
         <p className="mt-3 text-sm text-accent-strong" role="alert">
-          {errorMessage}
+          {translateServerError(errorMessage, locale)}
         </p>
       ) : null}
 
@@ -66,7 +74,7 @@ export function SubmitPanel({
         onClick={() => onSubmit(nickname, countryCode)}
         className="mt-4 inline-flex w-full items-center justify-center rounded bg-accent px-6 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {submitting ? "Saving…" : `Save my Top ${requiredCount}`}
+        {submitting ? t.saving : fmt(t.saveCta, { n: requiredCount })}
       </button>
     </div>
   );

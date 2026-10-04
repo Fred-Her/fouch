@@ -8,6 +8,8 @@ import { loadPrediction, savePrediction } from "@/lib/prediction-storage";
 import type { Participant } from "@/types/participant";
 import { TopTenList } from "./TopTenList";
 import { ParticipantBrowser } from "./ParticipantBrowser";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
 
 export function PredictionBuilder({
   eventSlug,
@@ -106,6 +108,8 @@ export function PredictionBuilder({
     .filter((participant): participant is Participant => Boolean(participant));
 
   const isComplete = selectedIds.length >= requiredCount;
+  const { dict } = useI18n();
+  const t = dict.builder;
 
   return (
     <div>
@@ -113,7 +117,7 @@ export function PredictionBuilder({
       <div className="sticky top-0 z-10 w-full border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-content items-center justify-between px-6 py-3">
           <span className="text-xs font-medium uppercase tracking-[0.15em] text-text-secondary">
-            {selectedIds.length} / {requiredCount} selected
+            {fmt(t.selectedCount, { count: selectedIds.length, total: requiredCount })}
           </span>
           <div className="h-1 w-24 overflow-hidden rounded-full bg-surface-raised">
             <div
@@ -125,8 +129,8 @@ export function PredictionBuilder({
       </div>
 
       <div className="mx-auto max-w-content px-6 py-8 lg:grid lg:grid-cols-[380px_1fr] lg:gap-10">
-        <section aria-label="Your Top 10" className="lg:sticky lg:top-20 lg:self-start">
-          <h2 className="font-display text-lg text-text-primary">Your Top {requiredCount}</h2>
+        <section aria-label={fmt(t.yourTop, { n: requiredCount })} className="lg:sticky lg:top-20 lg:self-start">
+          <h2 className="font-display text-lg text-text-primary">{fmt(t.yourTop, { n: requiredCount })}</h2>
           <div className="mt-3">
             <TopTenList
               rankedParticipants={rankedParticipants}
@@ -139,20 +143,20 @@ export function PredictionBuilder({
 
           {isComplete ? (
             <div className="mt-6 rounded border border-accent/40 bg-accent/10 p-4">
-              <p className="font-display text-base text-text-primary">Your Top {requiredCount} is ready.</p>
+              <p className="font-display text-base text-text-primary">{fmt(t.topReady, { n: requiredCount })}</p>
               <Link
                 href={`/predict/${eventSlug}/review`}
                 className="group mt-3 inline-flex items-center gap-2 rounded bg-accent px-5 py-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
               >
-                Review my prediction
+                {t.reviewCta}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
               </Link>
             </div>
           ) : null}
         </section>
 
-        <section aria-label="All contestants" className="mt-10 lg:mt-0">
-          <h2 className="font-display text-lg text-text-primary">All contestants</h2>
+        <section aria-label={t.allContestants} className="mt-10 lg:mt-0">
+          <h2 className="font-display text-lg text-text-primary">{t.allContestants}</h2>
           <div className="mt-3">
             <ParticipantBrowser
               participants={participants}

@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { CountryFlag } from "@/components/CountryFlag";
 import type { Participant } from "@/types/participant";
+import { useI18n } from "@/components/I18nProvider";
+import { fmt } from "@/lib/i18n";
 
 export function ParticipantBrowser({
   participants,
@@ -17,6 +19,9 @@ export function ParticipantBrowser({
   onToggle: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
+
+  const { dict } = useI18n();
+  const t = dict.builder;
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -40,14 +45,14 @@ export function ParticipantBrowser({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search countries..."
-          aria-label="Search countries"
+          placeholder={t.searchPlaceholder}
+          aria-label={t.searchAria}
           className="w-full rounded border border-border bg-surface py-2.5 pl-10 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent"
         />
       </div>
 
       {filtered.length === 0 ? (
-        <p className="mt-6 text-sm text-text-muted">No countries match &ldquo;{query}&rdquo;.</p>
+        <p className="mt-6 text-sm text-text-muted">{fmt(t.noMatch, { query })}</p>
       ) : (
         <ul className="mt-4 divide-y divide-border">
           {filtered.map((participant) => {
@@ -70,7 +75,7 @@ export function ParticipantBrowser({
                     {participant.displayName} <span className="text-text-muted">· {participant.countryName}</span>
                   </span>
                   {selected ? (
-                    <span className="text-xs font-medium uppercase tracking-wide">Selected</span>
+                    <span className="text-xs font-medium uppercase tracking-wide">{t.selected}</span>
                   ) : null}
                 </button>
               </li>

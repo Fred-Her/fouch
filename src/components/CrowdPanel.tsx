@@ -2,6 +2,8 @@
 import { CountryFlag } from "@/components/CountryFlag";
 import { getSampleSizeBucket } from "@/lib/community-comparison";
 import type { CrowdTopPicks } from "@/lib/crowd-picks";
+import type { Dictionary } from "@/content/types";
+import { fmt } from "@/lib/i18n";
 
 /**
  * FOUCH Home v1.1 Round 2 "The Crowd" — presentational only; all
@@ -15,11 +17,14 @@ export function CrowdPanel({
   crowd,
   eventSlug,
   predictHref,
+  dictionary,
 }: {
   crowd: CrowdTopPicks;
   eventSlug: string;
   predictHref: string;
+  dictionary: Dictionary;
 }) {
+  const t = dictionary.crowd;
   const bucket = getSampleSizeBucket(crowd.population);
   const isEarly = bucket === "0" || bucket === "1_4";
 
@@ -29,33 +34,33 @@ export function CrowdPanel({
 
       <div className="flex items-center gap-2">
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
-        <p className="text-xs font-medium uppercase tracking-[0.25em] text-text-secondary">The Crowd</p>
+        <p className="text-xs font-medium uppercase tracking-[0.25em] text-text-secondary">{t.title}</p>
       </div>
 
       {isEarly ? (
         <>
           <p className="mt-5 font-display text-3xl uppercase tracking-tight text-text-primary">
-            It&apos;s early.
+            {t.earlyTitle}
           </p>
           <p className="mt-3 text-sm text-text-secondary">
-            The first calls are coming in. Make yours before the crowd starts taking shape.
+            {t.earlyBody}
           </p>
           <Link
             href={predictHref}
             className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-accent-strong hover:text-accent"
           >
-            Make your call →
+            {t.earlyCta}
           </Link>
         </>
       ) : (
         <>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-sm text-text-secondary">Who does the crowd have winning?</p>
+            <p className="text-sm text-text-secondary">{t.question}</p>
             <Link
               href={`/events/${eventSlug}/leaderboard`}
               className="shrink-0 text-xs text-text-muted hover:text-text-secondary"
             >
-              View all →
+              {t.viewAll}
             </Link>
           </div>
 
@@ -81,7 +86,7 @@ export function CrowdPanel({
             ))}
           </ol>
 
-          <p className="mt-5 text-xs text-text-muted">Based on {crowd.population} predictions</p>
+          <p className="mt-5 text-xs text-text-muted">{fmt(t.basedOn, { n: crowd.population })}</p>
         </>
       )}
     </div>

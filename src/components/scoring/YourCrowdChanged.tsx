@@ -5,6 +5,7 @@ import { bucketSample } from "@/lib/consensus-change";
 import type { PredictionRecord } from "@/lib/predictions-db";
 import type { FouchEvent } from "@/types/event";
 import { ConsensusChangeTracker } from "./ConsensusChangeTracker";
+import { getI18n } from "@/lib/i18n-server";
 
 /**
  * Experiment 01 ("Your Crowd Changed") â€” FOUCH_EXPERIMENT_01.md.
@@ -21,6 +22,8 @@ export async function YourCrowdChanged({
 }) {
   const winnerId = prediction.rankedParticipantIds[0];
   if (!winnerId) return null;
+  const { locale, dict } = await getI18n();
+  const ct = dict.community;
 
   const result = await getConsensusChangeForPrediction(
     prediction.id,
@@ -35,16 +38,16 @@ export async function YourCrowdChanged({
   // comes from the community's aggregate winner picks and may
   // reference a participant who has since become
   // WITHDRAWN/REPLACED.
-  const participantsById = await resolveParticipantsByIds(event.slug, [winnerId]);
+  const participantsById = await resolveParticipantsByIds(event.slug, [winnerId], locale);
   const winner = participantsById.get(winnerId);
   if (!winner) return null;
 
-  const arrow = result.direction === "toward" ? "â†‘" : "â†“";
+  const arrow = result.direction === "toward" ? "↑" : "↓";
   const sign = result.changePoints > 0 ? "+" : "";
   const directionCopy =
     result.direction === "toward"
-      ? "The crowd is moving toward your call."
-      : "The crowd is moving away from your call.";
+      ? ct.crowdMovingToward
+      : ct.crowdMovingAway;
 
   return (
     <section className="mt-12 border-t border-border pt-10">
@@ -58,7 +61,7 @@ export async function YourCrowdChanged({
       />
 
       <p className="text-xs font-medium uppercase tracking-[0.15em] text-text-muted">
-        Your crowd changed
+        {ct.crowdChanged}
       </p>
 
       <div className="mt-3 flex items-center gap-2">
@@ -69,15 +72,15 @@ export async function YourCrowdChanged({
       </div>
 
       <p className="mt-2 font-display text-4xl text-accent-strong">
-        {Math.round(result.thenSupport)}% â†’ {Math.round(result.nowSupport)}%
+        {Math.round(result.thenSupport)}% → {Math.round(result.nowSupport)}%
       </p>
       <p className="mt-1 text-sm text-text-secondary">
         {arrow} {sign}
-        {Math.round(result.changePoints)} pts
+        {Math.round(result.changePoints)} {ct.pts}
       </p>
 
       <p className="mt-3 text-text-primary">{directionCopy}</p>
-      <p className="mt-2 text-xs text-text-muted">Based on community predictions since your call.</p>
+      <p className="mt-2 text-xs text-text-muted">{ct.crowdBasedOn}</p>
     </section>
   );
 }

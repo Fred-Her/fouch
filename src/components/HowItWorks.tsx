@@ -33,13 +33,13 @@ export function HowItWorks({ dictionary }: { dictionary: Dictionary }) {
   const competeCard = (
     <div key="compete" aria-hidden className="mt-5 space-y-3">
       <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-text-muted">
-        <span className="w-14 shrink-0">You</span>
+        <span className="w-14 shrink-0">{dictionary.howItWorks.you}</span>
         <span className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
           <span className="block h-full w-2/3 rounded-full bg-accent" />
         </span>
       </div>
       <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-text-muted">
-        <span className="w-14 shrink-0">Crowd</span>
+        <span className="w-14 shrink-0">{dictionary.howItWorks.crowd}</span>
         <span className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
           <span className="block h-full w-5/12 rounded-full bg-white/30" />
         </span>
@@ -55,10 +55,10 @@ export function HowItWorks({ dictionary }: { dictionary: Dictionary }) {
       >
         <div className="flex h-26 w-26 flex-col items-center justify-center rounded-full bg-black" style={{ height: "6.25rem", width: "6.25rem" }}>
           <span className="font-display text-4xl text-text-primary">82</span>
-          <span className="text-[10px] uppercase tracking-wide text-text-muted">Excellent</span>
+          <span className="text-[10px] uppercase tracking-wide text-text-muted">{dictionary.howItWorks.excellent}</span>
         </div>
       </div>
-      <span className="text-xs uppercase tracking-[0.2em] text-text-muted">Example score</span>
+      <span className="text-xs uppercase tracking-[0.2em] text-text-muted">{dictionary.howItWorks.exampleScore}</span>
     </div>
   );
 

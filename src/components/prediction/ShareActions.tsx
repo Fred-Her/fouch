@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Share2, Download, Link2, Check, Camera } from "lucide-react";
 import { track } from "@/lib/analytics";
 import type { FouchAnalyticsEvent } from "@/lib/analytics";
+import { useI18n } from "@/components/I18nProvider";
 import {
   getDeviceType,
   resolveInstagramShareMethod,
@@ -73,6 +74,8 @@ export function ShareActions({
   const [instagramState, setInstagramState] = useState<"idle" | "generating" | "ready">("idle");
   const [instagramDeviceType, setInstagramDeviceType] = useState<"mobile" | "desktop">("desktop");
   const events = EVENT_NAMES[variant];
+  const { dict } = useI18n();
+  const st = dict.share;
 
   // navigator.share only exists client-side — checked once after mount
   // so server and initial client render stay consistent (no
@@ -90,7 +93,7 @@ export function ShareActions({
     if (!canNativeShare) return;
 
     try {
-      await navigator.share({ title: "My Fouch prediction", url: publicUrl });
+      await navigator.share({ title: st.shareTitle, url: publicUrl });
       if (events.nativeOpened) track(events.nativeOpened, { event_slug: eventSlug });
     } catch {
       // User cancelled the share sheet — not an error worth surfacing.
@@ -152,7 +155,7 @@ export function ShareActions({
 
     if (shareMethod === "native_share") {
       try {
-        await navigator.share({ files: [file], url: publicUrl, title: "My Fouch prediction" });
+        await navigator.share({ files: [file], url: publicUrl, title: st.shareTitle });
         track("instagram_story_clicked", { ...properties });
         // Brief §6: Instagram Story always fires the literal
         // share_clicked signal (never events.share, which for the
@@ -182,7 +185,7 @@ export function ShareActions({
             format === "story" ? "bg-surface-raised text-text-primary" : "text-text-muted"
           }`}
         >
-          Story
+          {st.story}
         </button>
         <button
           type="button"
@@ -191,26 +194,26 @@ export function ShareActions({
             format === "post" ? "bg-surface-raised text-text-primary" : "text-text-muted"
           }`}
         >
-          Post
+          {st.post}
         </button>
       </div>
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={activeCardUrl}
-        alt={variant === "result" ? "Your Fouch result card" : "Your Fouch prediction card"}
+        alt={variant === "result" ? st.resultCardAlt : st.predictionCardAlt}
         className="mt-3 w-full max-w-xs rounded border border-border"
       />
 
       {instagramState === "ready" ? (
         <div className="mt-4 rounded border border-border-strong p-4">
           <p className="text-sm font-medium uppercase tracking-wide text-text-primary">
-            Your Story is ready
+            {st.storyReady}
           </p>
           <p className="mt-2 text-sm text-text-secondary">
             {instagramDeviceType === "mobile"
-              ? "Image saved. Open Instagram → Story → choose the image."
-              : "Open Instagram on your phone and add the saved image to your Story."}
+              ? st.storyReadyMobile
+              : st.storyReadyDesktop}
           </p>
           <button
             type="button"
@@ -218,7 +221,7 @@ export function ShareActions({
             className="mt-3 inline-flex items-center gap-2 rounded border border-border-strong px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
           >
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
-            {copied ? "Copied" : "Copy prediction link"}
+            {copied ? st.copied : st.copyPredictionLink}
           </button>
         </div>
       ) : (
@@ -230,7 +233,7 @@ export function ShareActions({
             className="inline-flex items-center gap-2 rounded bg-accent px-5 py-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Camera className="h-4 w-4" aria-hidden />
-            {instagramState === "generating" ? "Preparing…" : "Instagram Story"}
+            {instagramState === "generating" ? st.preparing : st.instagramStory}
           </button>
 
           {canNativeShare ? (
@@ -240,7 +243,7 @@ export function ShareActions({
               className="inline-flex items-center gap-2 rounded border border-border-strong px-5 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
             >
               <Share2 className="h-4 w-4" aria-hidden />
-              Share
+              {st.share}
             </button>
           ) : null}
 
@@ -251,7 +254,7 @@ export function ShareActions({
             className="inline-flex items-center gap-2 rounded border border-border-strong px-5 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
           >
             <Download className="h-4 w-4" aria-hidden />
-            Save image
+            {st.saveImage}
           </a>
 
           <button
@@ -260,7 +263,7 @@ export function ShareActions({
             className="inline-flex items-center gap-2 rounded border border-border-strong px-5 py-3 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent-strong"
           >
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
-            {copied ? "Copied" : "Copy link"}
+            {copied ? st.copied : st.copyLink}
           </button>
         </div>
       )}

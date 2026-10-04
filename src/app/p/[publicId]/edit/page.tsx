@@ -3,6 +3,9 @@ import { getPredictionWithParticipants } from "@/lib/predictions-db";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 import { EditPredictionFlow } from "@/components/prediction/EditPredictionFlow";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { getI18n } from "@/lib/i18n-server";
+import { fmt } from "@/lib/i18n";
 
 /**
  * FOUCH 0.3A â€” the edit entry point. This route is intentionally
@@ -29,7 +32,8 @@ export default async function EditPredictionPage({
   params: Promise<{ publicId: string }>;
 }) {
   const { publicId } = await params;
-  const record = await getPredictionWithParticipants(publicId);
+  const { locale, dict } = await getI18n();
+  const record = await getPredictionWithParticipants(publicId, locale);
   if (!record) notFound();
 
   const { prediction, event, rankedParticipants } = record;
@@ -43,15 +47,18 @@ export default async function EditPredictionPage({
     redirect(`/p/${publicId}`);
   }
 
-  const participantData = await getParticipantsForEvent(event.slug);
+  const participantData = await getParticipantsForEvent(event.slug, locale);
   if (!participantData) notFound();
 
   const requiredCount = Math.min(10, participantData.participants.length);
 
   return (
     <main className="mx-auto max-w-content px-6 py-8">
-      <h1 className="font-display text-2xl text-text-primary sm:text-3xl">{event.name}</h1>
-      <p className="mt-1 text-sm text-text-secondary">Edit your Top {requiredCount}</p>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="font-display text-2xl text-text-primary sm:text-3xl">{event.name}</h1>
+        <LanguageSwitcher eventSlug={event.slug} />
+      </div>
+      <p className="mt-1 text-sm text-text-secondary">{fmt(dict.publicPrediction.editTitle, { n: requiredCount })}</p>
 
       <EditPredictionFlow
         eventSlug={event.slug}

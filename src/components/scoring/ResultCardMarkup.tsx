@@ -1,7 +1,11 @@
-﻿import type { ScoreBreakdown, ScoreBand } from "@/types/scoring";
+﻿import type { ScoreBreakdown } from "@/types/scoring";
 import { getPredictorCountryName } from "@/lib/countries";
+import { getDictionary } from "@/lib/i18n";
+import type { Locale } from "@/lib/locale";
 
 export interface ResultCardData {
+  /** i18n v1 — presentation language only. */
+  locale?: Locale;
   eventName: string;
   nickname: string | null;
   countryCode: string | null;
@@ -17,13 +21,6 @@ const ACCENT_STRONG = "#C44C42";
 const TEXT_PRIMARY = "#F2EFE6";
 const TEXT_MUTED = "#A39FB0";
 
-const BAND_LABEL: Record<ScoreBand, string> = {
-  MISSED_IT: "Missed it",
-  FAIR: "Fair call",
-  GOOD: "Good call",
-  EXCELLENT: "Excellent call",
-  ELITE: "Elite call",
-};
 
 /**
  * Same visual system as PredictionCardMarkup — same tokens, same
@@ -46,7 +43,10 @@ export function ResultCardMarkup({
   siteDomain: string;
 }) {
   const scale = Math.min(1.32, Math.max(1, height / 1350));
-  const predictorCountryName = getPredictorCountryName(data.countryCode);
+  const locale = data.locale ?? "en";
+  const dict = getDictionary(locale);
+  const sd = dict.share;
+  const predictorCountryName = getPredictorCountryName(data.countryCode, locale);
   const whoBy = data.nickname
     ? `${data.nickname}${predictorCountryName ? ` · ${predictorCountryName}` : ""}`
     : predictorCountryName;
@@ -116,31 +116,31 @@ export function ResultCardMarkup({
         {breakdown.displayScore}
       </div>
       <div style={{ display: "flex", fontSize: 46 * scale, fontWeight: 700, color: ACCENT, marginTop: 4 }}>
-        {BAND_LABEL[breakdown.band].toUpperCase()}
+        {dict.score.bands[breakdown.band].toUpperCase()}
       </div>
 
       {/* Breakdown */}
       <div style={{ display: "flex", flexDirection: "column", marginTop: 64 * scale, gap: 28 * scale }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 34 * scale }}>
-          <div style={{ display: "flex" }}>Winner</div>
+          <div style={{ display: "flex" }}>{sd.cardWinner}</div>
           <div style={{ display: "flex", color: breakdown.components.winner.hit ? ACCENT_STRONG : TEXT_MUTED }}>
-            {breakdown.components.winner.hit ? "Correct" : "Missed"}
+            {breakdown.components.winner.hit ? sd.cardCorrect : sd.cardMissed}
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 34 * scale }}>
-          <div style={{ display: "flex" }}>Podium</div>
+          <div style={{ display: "flex" }}>{sd.cardPodium}</div>
           <div style={{ display: "flex" }}>
             {breakdown.components.podium.hits} / {breakdown.components.podium.total}
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 34 * scale }}>
-          <div style={{ display: "flex" }}>Top 5</div>
+          <div style={{ display: "flex" }}>{sd.cardTop5}</div>
           <div style={{ display: "flex" }}>
             {breakdown.components.top5.hits} / {breakdown.components.top5.total}
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 34 * scale }}>
-          <div style={{ display: "flex" }}>Top 10</div>
+          <div style={{ display: "flex" }}>{sd.cardTop10}</div>
           <div style={{ display: "flex" }}>
             {breakdown.components.top10.hits} / {breakdown.components.top10.total}
           </div>
@@ -158,14 +158,14 @@ export function ResultCardMarkup({
             borderRadius: 16,
           }}
         >
-          <div style={{ display: "flex", fontSize: 30 * scale, color: TEXT_MUTED }}>TOP {100 - Math.round(data.percentile)}%</div>
-          <div style={{ display: "flex", fontSize: 38 * scale, fontWeight: 700 }}>WORLDWIDE</div>
+          <div style={{ display: "flex", fontSize: 30 * scale, color: TEXT_MUTED }}>{sd.cardTopPct.replace("{n}", String(100 - Math.round(data.percentile)))}</div>
+          <div style={{ display: "flex", fontSize: 38 * scale, fontWeight: 700 }}>{sd.cardWorldwide}</div>
         </div>
       ) : null}
 
       {/* Footer */}
       <div style={{ display: "flex", flexDirection: "column", marginTop: "auto" }}>
-        <div style={{ display: "flex", fontSize: 34, fontWeight: 700 }}>THINK YOU COULD BEAT IT?</div>
+        <div style={{ display: "flex", fontSize: 34, fontWeight: 700 }}>{sd.cardBeatIt}</div>
         <div style={{ display: "flex", fontSize: 24, color: TEXT_MUTED, marginTop: 6 }}>{siteDomain}</div>
       </div>
     </div>

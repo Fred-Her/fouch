@@ -6,6 +6,7 @@ import { resolveParticipantsByIds, type ParticipantDataStatus } from "@/lib/part
 import { classifyInsertConflict } from "@/lib/insert-conflict";
 import { isRankingUnchanged } from "@/lib/prediction-version-logic";
 import type { FouchEvent } from "@/types/event";
+import type { Locale } from "@/lib/locale";
 import type { Participant } from "@/types/participant";
 import type { EligiblePrediction } from "@/lib/community-comparison";
 
@@ -477,7 +478,7 @@ export async function getDeviceTokenIdentity(
  * the prediction or any of its referenced participants can no longer
  * be resolved (e.g. seed data changed).
  */
-export async function getPredictionWithParticipants(publicId: string): Promise<{
+export async function getPredictionWithParticipants(publicId: string, locale: Locale = "en"): Promise<{
   prediction: PredictionRecord;
   event: FouchEvent;
   rankedParticipants: Participant[];
@@ -494,7 +495,7 @@ export async function getPredictionWithParticipants(publicId: string): Promise<{
   // getParticipantsForEvent here would silently drop such an entry
   // (or, worse, fail the length check below and 404 the whole public
   // prediction) the moment their status changed after the fact.
-  const participantsById = await resolveParticipantsByIds(prediction.eventSlug, prediction.rankedParticipantIds);
+  const participantsById = await resolveParticipantsByIds(prediction.eventSlug, prediction.rankedParticipantIds, locale);
 
   const rankedParticipants = prediction.rankedParticipantIds
     .map((id) => participantsById.get(id))
