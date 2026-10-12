@@ -17,6 +17,9 @@ import { PublicPredictionView } from "@/components/prediction/PublicPredictionVi
 import { YouVsTheWorld } from "@/components/prediction/YouVsTheWorld";
 import { FouchScore } from "@/components/scoring/FouchScore";
 import { YourCrowdChanged } from "@/components/scoring/YourCrowdChanged";
+import { OfficialResult } from "@/components/OfficialResult";
+import { classifyPicks, buildOfficialFinish } from "@/lib/official-result-display";
+import { getNextEvent } from "@/lib/next-event";
 
 export async function generateMetadata({
   params,
@@ -82,6 +85,8 @@ export default async function PublicPredictionPage({
   // scoring logic.
   const official = await getOfficialResult(event.slug, prediction.dataStatus);
   const hasResult = Boolean(official);
+  const pickMarks = official ? classifyPicks(prediction.rankedParticipantIds, official) : undefined;
+  const officialTopSize = official ? buildOfficialFinish(official).topSize : 10;
 
   // FOUCH 0.3A: editing is offered only for a verified prediction
   // while the event is still open â€” fetched fresh on every page view
@@ -90,6 +95,7 @@ export default async function PublicPredictionPage({
   const isPredictionOpen = isPredictionWindowOpen(lockConfig, Date.now());
   const canEdit = prediction.hasVerifiedOwner && isPredictionOpen;
   const showLockedNotice = prediction.hasVerifiedOwner && !isPredictionOpen;
+  const nextEvent = isPredictionOpen ? null : await getNextEvent(event.slug, locale);
 
   // FOUCH 0.3B Â§13: "Contestant list updated {date}" for a real,
   // non-demo event with verified-roster provenance â€” never "Demo
@@ -139,6 +145,15 @@ export default async function PublicPredictionPage({
         predictionLockAt={lockConfig?.predictionLockAt ?? null}
         predictionTimezone={lockConfig?.timezone ?? null}
         fouchScore={<FouchScore prediction={prediction} event={event} publicId={publicId} />}
+        officialResultSection={
+          official ? (
+            <OfficialResult eventSlug={event.slug} official={official} dictionary={dict} locale={locale} />
+          ) : undefined
+        }
+        pickMarks={pickMarks}
+        officialTopSize={officialTopSize}
+        predictionsClosed={!isPredictionOpen}
+        nextEvent={nextEvent}
         youVsTheWorld={<YouVsTheWorld prediction={prediction} event={event} />}
         yourCrowdChanged={<YourCrowdChanged prediction={prediction} event={event} />}
       />

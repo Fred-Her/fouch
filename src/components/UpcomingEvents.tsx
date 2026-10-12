@@ -21,10 +21,13 @@ export function UpcomingEvents({
   events,
   dictionary,
   locale = "en",
+  comingSoonSlugs = [],
 }: {
   events: FouchEvent[];
   dictionary: Dictionary;
   locale?: Locale;
+  /** Slugs with no official roster yet: shown as "Coming soon", no CTA. */
+  comingSoonSlugs?: string[];
 }) {
   if (events.length === 0) return null;
 
@@ -62,6 +65,12 @@ export function UpcomingEvents({
                   </p>
                 </div>
 
+                {comingSoonSlugs.includes(event.slug) ? (
+                  <span className="inline-flex shrink-0 items-center gap-2 rounded border border-border-strong px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-text-secondary">
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-text-muted" />
+                    {dictionary.homeResults.comingSoonChip}
+                  </span>
+                ) : (
                 <TrackedLink
                   href={`/predict/${event.slug}`}
                   event="featured_event_clicked"
@@ -71,6 +80,7 @@ export function UpcomingEvents({
                   {dictionary.featuredEvent.cta}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </TrackedLink>
+                )}
               </div>
             </div>
           </section>

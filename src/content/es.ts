@@ -263,6 +263,38 @@ export const es: Dictionary = {
     metaDemo: "Una clasificación de demostración de predicciones de FOUCH — no es un resultado oficial.",
     metaLive: "Mira cómo quedaron las predicciones de FOUCH tras el resultado.",
   },
+  results: {
+    heading: "Resultado oficial",
+    winner: "Ganadora",
+    firstRunnerUp: "1ª finalista",
+    secondRunnerUp: "2ª finalista",
+    top5Group: "Top 5 (posiciones 4–5)",
+    remainingGroup: "Resto del Top {n} (empatadas — sin orden)",
+    tiedNote: "El concurso anunció un Top {n}. Las finalistas empatadas se muestran sin posiciones inventadas.",
+    yourPicks: "Cómo quedaron tus elecciones",
+    markExact: "En el lugar correcto",
+    markIn: "En el Top {n}, en otro lugar",
+    markOut: "Fuera del Top {n}",
+    howScoreWorks: "Cómo funciona tu puntaje",
+    scoreExplain:
+      "Ganadora {winner} + Podio {podium} + Top 5 {top5} + Top 10 {top10} + Ranking {ranking} = 100. Todas las finalistas empatadas cuentan exactamente igual.",
+  },
+  unavailable: {
+    closedTitle: "Las predicciones están cerradas",
+    closedBody: "La ventana de predicciones de este evento terminó. Tu predicción original está a salvo — mira cómo quedó.",
+    viewResults: "Ver resultados y clasificación →",
+    comingSoonLabel: "Próximamente",
+    comingSoonTitle: "{event} llega pronto",
+    comingSoonBody:
+      "Estamos cargando la lista oficial de participantes. Las predicciones abrirán apenas esté confirmada — nunca con datos de prueba.",
+    backHome: "Volver a FOUCH",
+    nextEventCta: "{event} · Próximamente",
+    nextUp: "Lo que sigue",
+  },
+  homeResults: {
+    link: "Resultados {event} → Ver clasificación",
+    comingSoonChip: "Próximamente",
+  },
   lock: {
     notOpen: "Las predicciones de este evento todavía no han abierto.",
     locked: "Las predicciones de este evento están cerradas.",

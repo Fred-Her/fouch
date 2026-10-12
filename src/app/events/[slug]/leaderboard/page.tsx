@@ -10,6 +10,7 @@ import { LeaderboardTracker } from "@/components/scoring/LeaderboardTracker";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getI18n } from "@/lib/i18n-server";
 import { fmt } from "@/lib/i18n";
+import { getNextEvent } from "@/lib/next-event";
 
 // Sprint 5.1: this route reads Supabase state that changes independently
 // of any URL parameter (a new prediction being scored, a result being
@@ -59,6 +60,7 @@ export default async function EventLeaderboardPage({
   if (!participantData) notFound();
 
   const leaderboard = await getEventLeaderboard(slug, participantData.status, from);
+  const nextEvent = await getNextEvent(slug, locale);
   const pluralNoun = getEntryNoun(event, true);
 
   return (
@@ -178,6 +180,18 @@ export default async function EventLeaderboardPage({
           </p>
         </div>
       )}
+
+      {nextEvent ? (
+        <div className="mt-12 border-t border-border pt-8">
+          <p className="text-xs font-medium uppercase tracking-[0.15em] text-text-muted">{dict.unavailable.nextUp}</p>
+          <Link
+            href={`/predict/${nextEvent.slug}`}
+            className="mt-3 inline-flex items-center justify-center rounded bg-accent px-6 py-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
+          >
+            {nextEvent.comingSoon ? fmt(dict.unavailable.nextEventCta, { event: nextEvent.name }) : nextEvent.name}
+          </Link>
+        </div>
+      ) : null}
     </main>
   );
 }

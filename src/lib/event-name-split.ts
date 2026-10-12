@@ -16,3 +16,17 @@ export function splitEventNameYear(name: string): { primary: string; year: strin
   const year = match[2] ?? null;
   return { primary, year };
 }
+
+/**
+ * Compact label for tight spots (e.g. the Home results link):
+ * "Miss Grand International 2026" -> "MGI 2026". Only abbreviates
+ * names of three or more words; shorter names ("Miss Universe 2026")
+ * are returned in full. Pure and generic — never keyed to one event.
+ */
+export function getEventShortLabel(name: string): string {
+  const { primary, year } = splitEventNameYear(name);
+  const words = primary.split(/\s+/).filter(Boolean);
+  if (words.length < 3) return name.trim();
+  const initials = words.map((word) => word.charAt(0).toUpperCase()).join("");
+  return year ? `${initials} ${year}` : initials;
+}

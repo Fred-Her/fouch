@@ -5,6 +5,7 @@ import { getEventLockConfig } from "@/lib/events-db";
 import { getParticipantsForEvent } from "@/lib/participants";
 import { validateSubmission } from "@/lib/prediction-validation";
 import { insertPrediction, getPredictionByDeviceToken } from "@/lib/predictions-db";
+import { isDemoPredictionBlocked } from "@/lib/event-readiness";
 
 export interface SubmitPredictionInput {
   eventSlug: string;
@@ -29,6 +30,10 @@ export async function submitPrediction(
   const participantData = await getParticipantsForEvent(input.eventSlug);
   if (!participantData) {
     return { success: false, error: "This event has no contestants configured." };
+  }
+
+  if (isDemoPredictionBlocked(participantData.status)) {
+    return { success: false, error: "Predictions for this event aren't open yet." };
   }
 
   const requiredCount = Math.min(10, participantData.participants.length);

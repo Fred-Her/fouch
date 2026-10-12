@@ -9,6 +9,9 @@ import { PredictionBuilder } from "@/components/prediction/PredictionBuilder";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getI18n } from "@/lib/i18n-server";
 import { fmt } from "@/lib/i18n";
+import { PredictionUnavailable } from "@/components/PredictionUnavailable";
+import { isDemoPredictionBlocked } from "@/lib/event-readiness";
+import { getEventLockConfig, isPredictionWindowOpen } from "@/lib/events-db";
 
 export async function generateMetadata({
   params,
@@ -58,6 +61,14 @@ export default async function PredictPage({
         </p>
       </main>
     );
+  }
+
+  const lockConfig = await getEventLockConfig(slug);
+  if (isDemoPredictionBlocked(participantData.status)) {
+    return <PredictionUnavailable variant="coming_soon" eventName={event.name} eventSlug={slug} dictionary={dict} />;
+  }
+  if (!isPredictionWindowOpen(lockConfig, Date.now())) {
+    return <PredictionUnavailable variant="closed" eventName={event.name} eventSlug={slug} dictionary={dict} />;
   }
 
   const { status, participants, sourceCheckedAt } = participantData;

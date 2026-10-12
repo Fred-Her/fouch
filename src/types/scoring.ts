@@ -35,7 +35,8 @@ export interface OfficialResultInput {
   secondRunnerUp: string;
   /** Exactly 2 participant IDs, unordered relative to each other. */
   top5Extras: string[];
-  /** Exactly 5 participant IDs, unordered relative to each other. */
+  /** 5 participant IDs (6 when the competition announced a tied Top 11),
+   * unordered relative to each other — never an invented 6–11 ordering. */
   top10Extras: string[];
 }
 

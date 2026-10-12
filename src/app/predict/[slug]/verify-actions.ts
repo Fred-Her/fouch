@@ -15,6 +15,7 @@ import { isDeviceIdentityMismatch } from "@/lib/insert-conflict";
 import { isAuthorizedToEdit } from "@/lib/prediction-version-logic";
 import { normalizeEmail, isValidEmail } from "@/lib/email-validation";
 import { getSupabaseAuthClient } from "@/lib/supabase/auth-client";
+import { isDemoPredictionBlocked } from "@/lib/event-readiness";
 
 /**
  * Beta Hardening 0.2 Phase C â€” the verified-lock flow.
@@ -108,6 +109,14 @@ async function validateAndLock(
     return {
       success: false,
       error: "This event has no contestants configured.",
+      failureReason: "validation_failed",
+    };
+  }
+
+  if (isDemoPredictionBlocked(participantData.status)) {
+    return {
+      success: false,
+      error: "Predictions for this event aren't open yet.",
       failureReason: "validation_failed",
     };
   }

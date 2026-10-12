@@ -14,8 +14,16 @@ export function validateOfficialResult(
   if (result.top5Extras.length !== 2) {
     return { valid: false, error: "top5Extras must contain exactly 2 participants." };
   }
-  if (result.top10Extras.length !== 5) {
-    return { valid: false, error: "top10Extras must contain exactly 5 participants." };
+  // A conventional Top 10 has exactly 5 unordered finalists beyond the
+  // Top 5. Some competitions announce a TIED Top 11 instead (Miss Grand
+  // International 2026: six equal 5th runners-up). The tied finalists
+  // are stored as published — unordered, with no invented positions —
+  // so 5 or 6 are both valid. Anything else is still rejected outright.
+  if (result.top10Extras.length !== 5 && result.top10Extras.length !== 6) {
+    return {
+      valid: false,
+      error: "top10Extras must contain 5 participants (or 6 when the official result is a tied Top 11).",
+    };
   }
 
   const allIds = [

@@ -255,6 +255,38 @@
     metaDemo: "A demo FOUCH predictions leaderboard — not an official result.",
     metaLive: "See how FOUCH predictions ranked after the result.",
   },
+  results: {
+    heading: "Official result",
+    winner: "Winner",
+    firstRunnerUp: "1st runner-up",
+    secondRunnerUp: "2nd runner-up",
+    top5Group: "Top 5 (positions 4–5)",
+    remainingGroup: "Rest of the Top {n} (tied — no order)",
+    tiedNote: "The competition announced a Top {n}. Tied finalists are shown without invented positions.",
+    yourPicks: "How your picks landed",
+    markExact: "In the right place",
+    markIn: "In the Top {n}, different place",
+    markOut: "Not in the Top {n}",
+    howScoreWorks: "How your score works",
+    scoreExplain:
+      "Winner {winner} + Podium {podium} + Top 5 {top5} + Top 10 {top10} + Ranking {ranking} = 100. Every tied finalist counts exactly the same.",
+  },
+  unavailable: {
+    closedTitle: "Predictions are closed",
+    closedBody: "The prediction window for this event has ended. Your original call is safe — see how it landed.",
+    viewResults: "View results and leaderboard →",
+    comingSoonLabel: "Coming soon",
+    comingSoonTitle: "{event} is coming soon",
+    comingSoonBody:
+      "We're loading the official contestant list. Predictions open as soon as it's confirmed — never with placeholder data.",
+    backHome: "Back to FOUCH",
+    nextEventCta: "{event} · Coming soon",
+    nextUp: "Next up",
+  },
+  homeResults: {
+    link: "{event} Results → View Leaderboard",
+    comingSoonChip: "Coming soon",
+  },
   lock: {
     notOpen: "Predictions for this event haven't opened yet.",
     locked: "Predictions for this event are locked.",

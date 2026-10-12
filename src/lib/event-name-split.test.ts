@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect } from "vitest";
-import { splitEventNameYear } from "./event-name-split";
+import { splitEventNameYear, getEventShortLabel } from "./event-name-split";
 
 describe("splitEventNameYear — generic, never a specific-event hardcode", () => {
   it("splits 'Miss Universe 2026' into 'Miss Universe' + '2026'", () => {
@@ -19,5 +19,15 @@ describe("splitEventNameYear — generic, never a specific-event hardcode", () =
 
   it("does not split on a non-4-digit trailing number", () => {
     expect(splitEventNameYear("Top 10")).toEqual({ primary: "Top 10", year: null });
+  });
+});
+
+describe("getEventShortLabel — generic, never keyed to one event", () => {
+  it("abbreviates three-or-more-word names", () => {
+    expect(getEventShortLabel("Miss Grand International 2026")).toBe("MGI 2026");
+  });
+  it("keeps short names in full", () => {
+    expect(getEventShortLabel("Miss Universe 2026")).toBe("Miss Universe 2026");
+    expect(getEventShortLabel("Eurovision")).toBe("Eurovision");
   });
 });

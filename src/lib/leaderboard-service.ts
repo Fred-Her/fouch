@@ -5,6 +5,7 @@ import { getLeaderboardRawEntries } from "@/lib/predictions-db";
 import { buildLeaderboard, resolveViewerContext, LEADERBOARD_TOP_N } from "@/lib/leaderboard";
 import type { LeaderboardEntry, ViewerContext } from "@/lib/leaderboard";
 import type { ParticipantDataStatus } from "@/lib/participants";
+import { applyLeaderboardExclusions } from "@/lib/leaderboard-exclusions";
 
 export interface EventLeaderboard {
   status: "no_result" | "scored";
@@ -41,7 +42,10 @@ export async function getEventLeaderboard(
     return { status: "no_result", dataStatus, totalCount: 0, topEntries: [], viewer: null };
   }
 
-  const rawEntries = await getLeaderboardRawEntries(eventSlug, dataStatus);
+  const rawEntries = applyLeaderboardExclusions(
+    await getLeaderboardRawEntries(eventSlug, dataStatus),
+    eventSlug,
+  );
 
   const scored = rawEntries.map((entry) => ({
     ...entry,

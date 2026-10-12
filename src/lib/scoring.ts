@@ -38,7 +38,7 @@ export function getScoreBand(displayScore: number): ScoreBand {
  * from the published result structure — never an invented exact
  * position for an unordered Top5/Top10 extra (research §3, §5).
  */
-function getAcceptedRanges(official: OfficialResultInput): Map<string, [number, number]> {
+export function getAcceptedRanges(official: OfficialResultInput): Map<string, [number, number]> {
   const ranges = new Map<string, [number, number]>();
   ranges.set(official.winner, [1, 1]);
   ranges.set(official.firstRunnerUp, [2, 2]);

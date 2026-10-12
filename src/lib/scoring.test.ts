@@ -176,7 +176,7 @@ describe("validateOfficialResult", () => {
     expect(validateOfficialResult(bad, participants).valid).toBe(false);
   });
 
-  it("rejects top10Extras with the wrong size", () => {
+  it("rejects top10Extras with the wrong size (neither 5 nor 6)", () => {
     const bad: OfficialResultInput = { ...OFFICIAL, top10Extras: [R(6), R(7)] };
     expect(validateOfficialResult(bad, participants).valid).toBe(false);
   });

@@ -10,6 +10,7 @@
  */
 const EXACT_ES: Record<string, string> = {
   "This event doesn't exist.": "Este evento no existe.",
+  "Predictions for this event aren't open yet.": "Las predicciones de este evento aún no están abiertas.",
   "This event has no contestants configured.": "Este evento no tiene participantes configuradas.",
   "Missing device token.": "Falta el identificador del dispositivo. Recarga la página e inténtalo de nuevo.",
   "That doesn't look like a valid email address.": "Ese correo electrónico no parece válido.",

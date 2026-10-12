@@ -1,6 +1,11 @@
 ﻿import "server-only";
 import type { FouchEvent } from "@/types/event";
-import { getEventBySlugFromDb, getFeaturedEventFromDb, getUpcomingEventsFromDb } from "@/lib/events-db";
+import {
+  getEventBySlugFromDb,
+  getFeaturedEventFromDb,
+  getLatestCompletedEventFromDb,
+  getUpcomingEventsFromDb,
+} from "@/lib/events-db";
 
 /**
  * FOUCH 0.3B Event Resolution Fix — `events` in Supabase is now the
@@ -50,4 +55,8 @@ export async function getSecondaryUpcomingEvents(excludeSlug: string | null): Pr
 export function getEntryNoun(event: FouchEvent, plural: boolean): string {
   if (plural) return event.entryNounPlural ?? "picks";
   return event.entryNounSingular ?? "pick";
+}
+/** Most recent completed event, for the Home's "results" link. */
+export async function getLatestCompletedEvent(): Promise<FouchEvent | null> {
+  return getLatestCompletedEventFromDb();
 }

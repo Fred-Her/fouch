@@ -156,3 +156,24 @@ export async function getFeaturedEventFromDb(): Promise<FouchEvent | null> {
   const chosen = data.find((row) => row.slug === featuredSlug);
   return chosen ? toFouchEvent(chosen) : null;
 }
+
+/**
+ * The most recently completed event (status = 'completed'), used by
+ * the Home to link to its final results/leaderboard. Generic — never
+ * keyed to a specific event.
+ */
+export async function getLatestCompletedEventFromDb(): Promise<FouchEvent | null> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_COLUMNS)
+    .eq("status", "completed")
+    .order("event_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return toFouchEvent(data);
+}

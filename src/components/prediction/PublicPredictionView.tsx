@@ -3,12 +3,13 @@
 import { useEffect, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Pencil, Check, Minus, X } from "lucide-react";
 import { CountryFlag } from "@/components/CountryFlag";
 import { track } from "@/lib/analytics";
 import { siteUrl } from "@/lib/site";
 import { formatEventLocalLockTime } from "@/lib/event-time-display";
 import type { Participant } from "@/types/participant";
+import type { PickMark } from "@/lib/official-result-display";
 import { ShareActions } from "./ShareActions";
 import { useI18n } from "@/components/I18nProvider";
 import { fmt } from "@/lib/i18n";
@@ -24,6 +25,11 @@ export function PublicPredictionView({
   predictionLockAt = null,
   predictionTimezone = null,
   fouchScore,
+  officialResultSection,
+  pickMarks,
+  officialTopSize = 10,
+  predictionsClosed = false,
+  nextEvent = null,
   youVsTheWorld,
   yourCrowdChanged,
 }: {
@@ -59,6 +65,20 @@ export function PublicPredictionView({
    * is exactly the pre-result experience. Server Component, passed down
    * for the same reason as youVsTheWorld below. */
   fouchScore?: ReactNode;
+  /** Post-event: the official finish (Server Component), rendered
+   * right after the score. Absent before a result exists. */
+  officialResultSection?: ReactNode;
+  /** Post-event: how each of the user's saved picks landed, keyed by
+   * participant id — display only, derived from the same ranges the
+   * score uses. Absent before a result exists. */
+  pickMarks?: Record<string, PickMark>;
+  /** 10 for a conventional Top 10, 11 for a tied Top 11 (labels only). */
+  officialTopSize?: number;
+  /** True once the event's prediction window has ended: the bottom CTA
+   * stops pointing at this (closed) event's builder. */
+  predictionsClosed?: boolean;
+  /** The next event to introduce after this one, if any. */
+  nextEvent?: { slug: string; name: string; comingSoon: boolean } | null;
   /** The You vs The World section — a Server Component rendered by the
    * page and passed down, since it needs server-side data fetching
    * that a Client Component can't do directly. */
@@ -70,6 +90,7 @@ export function PublicPredictionView({
   const searchParams = useSearchParams();
   const { locale, dict } = useI18n();
   const pt = dict.publicPrediction;
+  const ut = dict.unavailable;
   const isNew = searchParams.get("new") === "1";
   const isEdited = searchParams.get("edited") === "1";
   const showSavedBanner = isNew || isEdited;
@@ -140,9 +161,27 @@ export function PublicPredictionView({
             <span className="truncate text-sm text-text-primary">
               {participant.displayName} <span className="text-text-muted">· {participant.countryName}</span>
             </span>
+            {pickMarks ? <PickMarkIcon mark={pickMarks[participant.id]} topSize={officialTopSize} /> : null}
           </li>
         ))}
       </ol>
+
+      {pickMarks ? (
+        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted">
+          <li className="inline-flex items-center gap-1.5">
+            <Check className="h-3.5 w-3.5 text-accent-strong" aria-hidden />
+            {dict.results.markExact}
+          </li>
+          <li className="inline-flex items-center gap-1.5">
+            <Minus className="h-3.5 w-3.5" aria-hidden />
+            {fmt(dict.results.markIn, { n: officialTopSize })}
+          </li>
+          <li className="inline-flex items-center gap-1.5">
+            <X className="h-3.5 w-3.5" aria-hidden />
+            {fmt(dict.results.markOut, { n: officialTopSize })}
+          </li>
+        </ul>
+      ) : null}
 
       {canEdit ? (
         <div className="mt-4">
@@ -167,6 +206,8 @@ export function PublicPredictionView({
 
       {fouchScore}
 
+      {officialResultSection}
+
       {youVsTheWorld}
 
       {yourCrowdChanged}
@@ -178,15 +219,54 @@ export function PublicPredictionView({
           social object once scoring exists). */}
       {!hasResult ? originalPredictionShare : null}
 
-      <Link
-        href={`/predict/${eventSlug}?from=${publicId}`}
-        onClick={() => track("public_prediction_cta_clicked", { event_slug: eventSlug })}
-        className="mt-10 inline-flex items-center justify-center rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
-      >
-        {pt.makeYourTop}
-      </Link>
+      {predictionsClosed ? (
+        nextEvent ? (
+          <Link
+            href={`/predict/${nextEvent.slug}`}
+            onClick={() => track("public_prediction_cta_clicked", { event_slug: nextEvent.slug })}
+            className="mt-10 inline-flex items-center justify-center rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
+          >
+            {nextEvent.comingSoon ? fmt(ut.nextEventCta, { event: nextEvent.name }) : pt.makeYourTop}
+          </Link>
+        ) : null
+      ) : (
+        <Link
+          href={`/predict/${eventSlug}?from=${publicId}`}
+          onClick={() => track("public_prediction_cta_clicked", { event_slug: eventSlug })}
+          className="mt-10 inline-flex items-center justify-center rounded bg-accent px-7 py-4 text-base font-medium text-on-accent transition-colors hover:bg-accent-strong"
+        >
+          {pt.makeYourTop}
+        </Link>
+      )}
 
       {hasResult ? originalPredictionShare : null}
     </div>
+  );
+}
+/** Per-pick result marker. Icon + accessible label (never color alone). */
+function PickMarkIcon({ mark, topSize }: { mark: PickMark | undefined; topSize: number }) {
+  const { dict } = useI18n();
+  if (!mark) return null;
+  if (mark === "exact") {
+    const label = dict.results.markExact;
+    return (
+      <span title={label} aria-label={label} className="shrink-0 text-accent-strong">
+        <Check className="h-4 w-4" aria-hidden />
+      </span>
+    );
+  }
+  if (mark === "in_top") {
+    const label = fmt(dict.results.markIn, { n: topSize });
+    return (
+      <span title={label} aria-label={label} className="shrink-0 text-text-secondary">
+        <Minus className="h-4 w-4" aria-hidden />
+      </span>
+    );
+  }
+  const label = fmt(dict.results.markOut, { n: topSize });
+  return (
+    <span title={label} aria-label={label} className="shrink-0 text-text-muted">
+      <X className="h-4 w-4" aria-hidden />
+    </span>
   );
 }
