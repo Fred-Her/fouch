@@ -9,6 +9,7 @@ import { PredictionUnavailable } from "@/components/PredictionUnavailable";
 import { ResultsLink } from "@/components/ResultsLink";
 import { UpcomingEvents } from "@/components/UpcomingEvents";
 import { PublicPredictionView } from "@/components/prediction/PublicPredictionView";
+import { LeaderboardRow } from "@/components/scoring/LeaderboardRow";
 import { en } from "@/content/en";
 import { es } from "@/content/es";
 import type { Participant } from "@/types/participant";
@@ -63,6 +64,20 @@ describe("Home — Up Next shows 'Coming soon' (no builder CTA) for events witho
       createElement(UpcomingEvents, { events: [mu], dictionary: en, locale: "en", comingSoonSlugs: [] }),
     );
     expect(html).toContain("/predict/miss-universe-2026");
+  });
+});
+
+describe("Up Next numbering", () => {
+  it("starts at 02 under a featured event, and at 01 when there is none", () => {
+    const withFeatured = renderToStaticMarkup(
+      createElement(UpcomingEvents, { events: [mu], dictionary: en, locale: "en", comingSoonSlugs: ["miss-universe-2026"] }),
+    );
+    expect(withFeatured).toContain(">02<");
+    const alone = renderToStaticMarkup(
+      createElement(UpcomingEvents, { events: [mu], dictionary: en, locale: "en", comingSoonSlugs: ["miss-universe-2026"], firstNumber: 1 }),
+    );
+    expect(alone).toContain(">01<");
+    expect(alone).not.toContain(">02<");
   });
 });
 
@@ -135,5 +150,19 @@ describe("Public prediction after the result", () => {
   it("the original URL/public id never changes", () => {
     const html = render("en", { predictionsClosed: true, nextEvent: null });
     expect(html).toContain("/p/abc123");
+  });
+});
+
+describe("Leaderboard row — no placeholder badge for entries without a country", () => {
+  const entry = { publicId: "j6p7x6hef", nickname: "Alguien", countryCode: null, score: 37, band: "MISSED_IT", rank: 1 } as never;
+  it("renders no 'XX' badge when the predictor left the country empty", () => {
+    const html = renderToStaticMarkup(createElement(LeaderboardRow, { entry, eventSlug: "e", isViewer: false, prominent: true }));
+    expect(html).not.toContain(">XX<");
+    expect(html).toContain("Alguien");
+  });
+  it("still renders the flag when a country exists", () => {
+    const withCountry = { publicId: "p", nickname: "Perez", countryCode: "CV", score: 5, band: "MISSED_IT", rank: 3 } as never;
+    const html = renderToStaticMarkup(createElement(LeaderboardRow, { entry: withCountry, eventSlug: "e", isViewer: false, prominent: false }));
+    expect(html).toContain("<svg");
   });
 });

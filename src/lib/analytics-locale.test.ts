@@ -1,4 +1,5 @@
-﻿import { describe, it, expect, vi, afterEach } from "vitest";
+﻿// @vitest-environment jsdom
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 describe("analytics — locale property on every event (i18n v1)", () => {
   const originalKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;

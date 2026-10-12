@@ -31,7 +31,9 @@ export function LeaderboardRow({
       >
         {String(entry.rank).padStart(2, "0")}
       </span>
-      <CountryFlag countryCode={entry.countryCode} className={prominent ? "text-2xl" : "text-lg"} />
+      {entry.countryCode ? (
+        <CountryFlag countryCode={entry.countryCode} className={prominent ? "text-2xl" : "text-lg"} />
+      ) : null}
       <span className={`flex-1 truncate text-text-primary ${prominent ? "text-lg" : "text-sm"}`}>
         {entry.nickname || "Anonymous"}
         {isViewer ? <span className="ml-2 text-xs uppercase tracking-wide text-accent-strong">{youLabel}</span> : null}

@@ -16,7 +16,17 @@
 export default defineConfig({
   oxc: { jsx: { runtime: "automatic" } },
   test: {
-    environment: "jsdom",
+    // Most tests are pure logic or static markup and need no DOM. Booting
+    // a jsdom window for every file made the suite slow enough on a busy
+    // machine to trip vitest's 5s default on module-import-heavy tests, so
+    // the default is node and the few files that touch window/sessionStorage
+    // opt in with `// @vitest-environment jsdom`.
+    environment: "node",
+    // Cold module transforms (posthog-js) can be slow on a loaded machine;
+    // a generous ceiling removes the false timeout without weakening any
+    // assertion.
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
   resolve: {
     alias: {

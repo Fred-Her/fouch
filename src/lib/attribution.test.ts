@@ -1,4 +1,5 @@
-﻿import { describe, it, expect, beforeEach } from "vitest";
+﻿// @vitest-environment jsdom
+import { describe, it, expect, beforeEach } from "vitest";
 import { captureUtmSource } from "./attribution";
 
 function setUrl(search: string) {

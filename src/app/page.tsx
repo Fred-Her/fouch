@@ -72,7 +72,9 @@ export default async function Home() {
         {featuredEvent ? (
           <FeaturedEvent event={featuredEvent} dictionary={dict} locale={locale} />
         ) : null}
-        <UpcomingEvents events={upcomingEvents} dictionary={dict} locale={locale} comingSoonSlugs={comingSoonSlugs} />
+        <UpcomingEvents events={upcomingEvents} dictionary={dict} locale={locale} comingSoonSlugs={comingSoonSlugs}
+          firstNumber={featuredEvent ? 2 : 1}
+        />
         <HowItWorks dictionary={dict} />
         <ClosingMoment eventSlug={featuredEvent?.slug ?? null} dictionary={dict} />
       </main>

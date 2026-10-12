@@ -1,4 +1,5 @@
-﻿import { describe, it, expect, vi, afterEach } from "vitest";
+﻿// @vitest-environment jsdom
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 describe("track() — Beta Hardening 0.1: analytics must never break the product", () => {
   const originalKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;

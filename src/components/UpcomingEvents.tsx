@@ -22,12 +22,15 @@ export function UpcomingEvents({
   dictionary,
   locale = "en",
   comingSoonSlugs = [],
+  firstNumber = 2,
 }: {
   events: FouchEvent[];
   dictionary: Dictionary;
   locale?: Locale;
   /** Slugs with no official roster yet: shown as "Coming soon", no CTA. */
   comingSoonSlugs?: string[];
+  /** Section number of the first event: 2 when a featured event is shown above (01), otherwise 1. */
+  firstNumber?: number;
 }) {
   if (events.length === 0) return null;
 
@@ -45,7 +48,7 @@ export function UpcomingEvents({
                 <div>
                   <div className="flex items-center gap-3">
                     <span className="font-display text-sm text-accent-strong/70">
-                      {String(index + 2).padStart(2, "0")}
+                      {String(index + firstNumber).padStart(2, "0")}
                     </span>
                     <span className="h-px w-8 bg-border-strong" aria-hidden />
                     <span className="text-xs font-medium uppercase tracking-[0.25em] text-text-secondary">
