@@ -38,7 +38,7 @@ export default async function EditPredictionPage({
 
   const { prediction, event, rankedParticipants } = record;
 
-  if (!prediction.hasVerifiedOwner) {
+  if (!prediction.hasVerifiedOwner || prediction.dataStatus === "demo") {
     redirect(`/p/${publicId}`);
   }
 

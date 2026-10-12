@@ -2,6 +2,7 @@
 import type { Participant } from "@/types/participant";
 import { isSelectableStatus } from "@/lib/participant-status";
 import { localizeParticipant as localize } from "@/lib/participant-locale";
+import { chooseRosterSource, demoParticipantsForIds } from "@/lib/participant-sources";
 import type { Locale } from "@/lib/locale";
 import { getAllEventParticipantRows, type EventParticipantRow } from "@/lib/event-participants-db";
 
@@ -106,16 +107,19 @@ function toParticipant(row: EventParticipantRow): Participant {
  */
 export async function getParticipantsForEvent(slug: string, locale: Locale = "en"): Promise<ParticipantsForEvent | null> {
   const hardcoded = participantsByEventSlug[slug];
-  if (hardcoded) {
+  const rows = await getAllEventParticipantRows(slug);
+
+  // Database first: an event with real roster rows ALWAYS uses them. The
+  // hardcoded demo list only applies while an event has no rows at all.
+  const source = chooseRosterSource(rows.length, Boolean(hardcoded));
+  if (source === "demo" && hardcoded) {
     return {
       status: "demo",
       participants: hardcoded.filter((participant) => participant.isActive).map((p) => localize(p, locale)),
       sourceCheckedAt: null,
     };
   }
-
-  const rows = await getAllEventParticipantRows(slug);
-  if (rows.length === 0) return null;
+  if (source === "none") return null;
 
   const active = rows.filter((row) => isSelectableStatus(row.status));
   const sourceCheckedAt = active.reduce<string | null>((latest, row) => {
@@ -151,20 +155,16 @@ export async function resolveParticipantsByIds(
   locale: Locale = "en",
 ): Promise<Map<string, Participant>> {
   const idSet = new Set(participantIds);
-  const hardcoded = participantsByEventSlug[eventSlug];
-
-  if (hardcoded) {
-    const map = new Map<string, Participant>();
-    for (const participant of hardcoded) {
-      if (idSet.has(participant.id)) map.set(participant.id, localize(participant, locale));
-    }
-    return map;
-  }
-
   const rows = await getAllEventParticipantRows(eventSlug);
   const map = new Map<string, Participant>();
   for (const row of rows) {
     if (idSet.has(row.id)) map.set(row.id, localize(toParticipant(row), locale));
+  }
+
+  // Historical demo predictions (ids "demo-xx") must keep rendering after
+  // the event moved to its real roster. Resolve-only: never selectable.
+  for (const demo of demoParticipantsForIds(participantIds, participantsByEventSlug[eventSlug])) {
+    if (!map.has(demo.id)) map.set(demo.id, localize(demo, locale));
   }
   return map;
 }

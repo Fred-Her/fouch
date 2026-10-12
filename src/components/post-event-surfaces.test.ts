@@ -50,7 +50,7 @@ describe("Home — Up Next shows 'Coming soon' (no builder CTA) for events witho
     );
     expect(html).toContain("Coming soon");
     expect(html).not.toContain("/predict/miss-universe-2026");
-    expect(html).not.toContain("Make your Top 10");
+    expect(html).not.toContain("Make your prediction");
     expect(html).toContain("NOV 24 · San Juan, Puerto Rico");
   });
   it("Spanish chip", () => {
@@ -64,6 +64,69 @@ describe("Home — Up Next shows 'Coming soon' (no builder CTA) for events witho
       createElement(UpcomingEvents, { events: [mu], dictionary: en, locale: "en", comingSoonSlugs: [] }),
     );
     expect(html).toContain("/predict/miss-universe-2026");
+  });
+});
+
+describe("Roster changes never silently alter a saved prediction — they warn the owner", () => {
+  const rp = (id: string, name: string, active: boolean): Participant => ({
+    id, eventId: "e", displayName: name, countryCode: "CL", countryName: "Chile", sortOrder: 0, isActive: active,
+  });
+  const ranked = [rp("a", "STILL IN", true), rp("b", "WITHDRAWN ONE", false)];
+  const render = (locale: "en" | "es", extra: Record<string, unknown>) =>
+    renderToStaticMarkup(
+      withI18n(
+        locale,
+        createElement(PublicPredictionView, {
+          eventSlug: mu.slug,
+          publicId: "abc123",
+          rankedParticipants: ranked,
+          youVsTheWorld: null,
+          ...extra,
+        }),
+      ),
+    );
+
+  it("marks the pick that left the lineup and shows the owner a notice while predictions are open", () => {
+    const html = render("en", { canEdit: true });
+    expect(html).toContain("No longer in the lineup");
+    expect(html).toContain("One or more of your picks is no longer in the official lineup");
+    expect(html).toContain("WITHDRAWN ONE");
+  });
+  it("Spanish copy", () => {
+    const html = render("es", { canEdit: true });
+    expect(html).toContain("Ya no está en la lista");
+    expect(html).toContain("Edita tu predicción para reemplazarlas");
+  });
+  it("no owner notice once the prediction can't be edited, but the badge stays (history is preserved, never rewritten)", () => {
+    const html = render("en", { canEdit: false });
+    expect(html).toContain("No longer in the lineup");
+    expect(html).not.toContain("One or more of your picks");
+  });
+  it("a prediction whose picks are all still in the lineup shows neither", () => {
+    const html = renderToStaticMarkup(
+      withI18n(
+        "en",
+        createElement(PublicPredictionView, {
+          eventSlug: mu.slug,
+          publicId: "abc123",
+          rankedParticipants: [rp("a", "STILL IN", true)],
+          canEdit: true,
+          youVsTheWorld: null,
+        }),
+      ),
+    );
+    expect(html).not.toContain("No longer in the lineup");
+  });
+});
+
+describe("Primary CTA copy (EN/ES)", () => {
+  it("English: 'Make your prediction' on the hero and the featured event", () => {
+    expect(en.hero.cta).toBe("Make your prediction");
+    expect(en.featuredEvent.cta).toBe("Make your prediction");
+  });
+  it("Spanish: 'Haz tu predicción'", () => {
+    expect(es.hero.cta).toBe("Haz tu predicción");
+    expect(es.featuredEvent.cta).toBe("Haz tu predicción");
   });
 });
 

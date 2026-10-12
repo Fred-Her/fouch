@@ -17,7 +17,7 @@ export const es: Dictionary = {
     eyebrow: "Predicciones de entretenimiento",
     headlineLines: ["Haz", "tu", "predicción."],
     subhead: "Predice. Descubre qué piensa la comunidad. Demuestra que acertaste.",
-    cta: "Empieza a predecir",
+    cta: "Haz tu predicción",
     predictionsOpen: "Predicciones abiertas",
     predictLabel: "Predice",
     predictHint: "Arma tu Top 10",
@@ -30,7 +30,7 @@ export const es: Dictionary = {
     eyebrowNow: "Predicciones abiertas",
     eyebrowClosed: "Predicciones cerradas",
     prompt: "¿Quiénes están en tu Top 10?",
-    cta: "Arma tu Top 10",
+    cta: "Haz tu predicción",
     viewLeaderboard: "Ver clasificación →",
   },
   crowd: {
@@ -151,6 +151,10 @@ export const es: Dictionary = {
     shareHeading: "Comparte tu predicción",
     originalPrediction: "Tu predicción original",
     makeYourTop: "Arma tu Top 10",
+    pickUnavailableBadge: "Ya no está en la lista",
+    pickUnavailableNotice:
+      "Una o más de tus elecciones ya no están en la lista oficial. Edita tu predicción para reemplazarlas antes de que cierren las predicciones.",
+    demoNoEdit: "Esta era una predicción de demostración y ya no se puede editar.",
     editTitle: "Edita tu Top {n}",
   },
   share: {

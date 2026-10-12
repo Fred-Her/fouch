@@ -161,6 +161,11 @@ export function PublicPredictionView({
             <span className="truncate text-sm text-text-primary">
               {participant.displayName} <span className="text-text-muted">· {participant.countryName}</span>
             </span>
+            {!participant.isActive ? (
+              <span className="shrink-0 rounded border border-border-strong px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-accent-strong">
+                {pt.pickUnavailableBadge}
+              </span>
+            ) : null}
             {pickMarks ? <PickMarkIcon mark={pickMarks[participant.id]} topSize={officialTopSize} /> : null}
           </li>
         ))}
@@ -181,6 +186,12 @@ export function PublicPredictionView({
             {fmt(dict.results.markOut, { n: officialTopSize })}
           </li>
         </ul>
+      ) : null}
+
+      {canEdit && rankedParticipants.some((participant) => !participant.isActive) ? (
+        <p role="status" className="mt-4 rounded border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-text-primary">
+          {pt.pickUnavailableNotice}
+        </p>
       ) : null}
 
       {canEdit ? (

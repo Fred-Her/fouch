@@ -93,8 +93,11 @@ export default async function PublicPredictionPage({
   // from the single authoritative source, never cached/assumed.
   const lockConfig = await getEventLockConfig(event.slug);
   const isPredictionOpen = isPredictionWindowOpen(lockConfig, Date.now());
-  const canEdit = prediction.hasVerifiedOwner && isPredictionOpen;
-  const showLockedNotice = prediction.hasVerifiedOwner && !isPredictionOpen;
+  // A demo prediction was made against placeholder data; once the event runs on
+  // its real roster it stays viewable (with its banner) but is never editable.
+  const isDemoPrediction = prediction.dataStatus === "demo";
+  const canEdit = prediction.hasVerifiedOwner && isPredictionOpen && !isDemoPrediction;
+  const showLockedNotice = prediction.hasVerifiedOwner && !isPredictionOpen && !isDemoPrediction;
   const nextEvent = isPredictionOpen ? null : await getNextEvent(event.slug, locale);
 
   // FOUCH 0.3B Â§13: "Contestant list updated {date}" for a real,
@@ -128,6 +131,7 @@ export default async function PublicPredictionPage({
       {prediction.dataStatus === "demo" ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">
           {dict.publicPrediction.demoBanner}
+          {prediction.hasVerifiedOwner ? <span className="mt-1 block">{dict.publicPrediction.demoNoEdit}</span> : null}
         </p>
       ) : sourceCheckedAt ? (
         <p className="mt-3 inline-block rounded border border-border-strong px-2 py-1 text-xs text-text-muted">

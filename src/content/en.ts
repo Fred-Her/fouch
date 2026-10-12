@@ -9,7 +9,7 @@
     eyebrow: "Entertainment Predictions",
     headlineLines: ["Make", "your", "call."],
     subhead: "Predict it. See what the crowd thinks. Prove you called it.",
-    cta: "Start predicting",
+    cta: "Make your prediction",
     predictionsOpen: "Predictions Open",
     predictLabel: "Predict",
     predictHint: "Build your Top 10",
@@ -22,7 +22,7 @@
     eyebrowNow: "Now Predicting",
     eyebrowClosed: "Predictions Closed",
     prompt: "Who makes your Top 10?",
-    cta: "Make your Top 10",
+    cta: "Make your prediction",
     viewLeaderboard: "View leaderboard →",
   },
   crowd: {
@@ -143,6 +143,10 @@
     shareHeading: "Share your call",
     originalPrediction: "Your original prediction",
     makeYourTop: "Make your Top 10",
+    pickUnavailableBadge: "No longer in the lineup",
+    pickUnavailableNotice:
+      "One or more of your picks is no longer in the official lineup. Edit your prediction to replace them before predictions lock.",
+    demoNoEdit: "This was a demo prediction and can no longer be edited.",
     editTitle: "Edit your Top {n}",
   },
   share: {
