@@ -6,6 +6,7 @@ import { CountryFlag } from "@/components/CountryFlag";
 import type { Participant } from "@/types/participant";
 import { useI18n } from "@/components/I18nProvider";
 import { fmt } from "@/lib/i18n";
+import { matchesParticipantSearch } from "@/lib/participant-search";
 
 export function ParticipantBrowser({
   participants,
@@ -24,14 +25,9 @@ export function ParticipantBrowser({
   const t = dict.builder;
 
   const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return participants;
+    if (!query.trim()) return participants;
 
-    return participants.filter(
-      (participant) =>
-        participant.displayName.toLowerCase().includes(normalized) ||
-        participant.countryName.toLowerCase().includes(normalized),
-    );
+    return participants.filter((participant) => matchesParticipantSearch(participant, query));
   }, [participants, query]);
 
   return (

@@ -15,3 +15,18 @@ export function localizeParticipant(participant: Participant, locale: Locale): P
     countryName: getLocalizedCountryName(participant.countryCode, participant.countryName, locale),
   };
 }
+
+/**
+ * The roster comes from the database in no guaranteed order, so the builder
+ * list is sorted alphabetically by the country name IN THE VIEWER'S LANGUAGE
+ * (then by contestant name as a stable tiebreak). Newly added delegates land
+ * in their alphabetical place instead of at the end of the list. Pure and
+ * non-mutating.
+ */
+export function sortParticipantsByCountry(participants: Participant[], locale: Locale): Participant[] {
+  return [...participants].sort(
+    (a, b) =>
+      a.countryName.localeCompare(b.countryName, locale, { sensitivity: "base" }) ||
+      a.displayName.localeCompare(b.displayName, locale, { sensitivity: "base" }),
+  );
+}

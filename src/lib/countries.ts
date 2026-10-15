@@ -291,10 +291,22 @@ export function getPredictorCountryName(code: string | null, locale: Locale = "e
  * codes such as XK, or a runtime without that locale) — never a raw
  * ISO code. No second country dataset is introduced.
  */
+/**
+ * CLDR's long Spanish names for a few regions are administrative and awkward on a
+ * contestant card ("RAE de Hong Kong (China)", "Territorios Palestinos"). For those
+ * only, the CLDR short form ("Hong Kong", "Palestina") reads naturally. Every other
+ * country keeps its long name — notably "Estados Unidos", where the short form would
+ * be the abbreviation "EE. UU.".
+ */
+const PREFER_SHORT_NAME = new Set(["HK", "MO", "PS"]);
+
 export function getLocalizedCountryName(code: string, englishName: string, locale: Locale): string {
   if (locale === "en") return englishName;
   try {
-    const localized = new Intl.DisplayNames([locale], { type: "region" }).of(code);
+    const localized = new Intl.DisplayNames([locale], {
+      type: "region",
+      style: PREFER_SHORT_NAME.has(code) ? "short" : "long",
+    }).of(code);
     if (localized && localized !== code) return localized;
   } catch {
     // Unsupported locale/code in this runtime — fall through to English.

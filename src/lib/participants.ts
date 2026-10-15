@@ -1,7 +1,7 @@
 ﻿import "server-only";
 import type { Participant } from "@/types/participant";
 import { isSelectableStatus } from "@/lib/participant-status";
-import { localizeParticipant as localize } from "@/lib/participant-locale";
+import { localizeParticipant as localize, sortParticipantsByCountry } from "@/lib/participant-locale";
 import { chooseRosterSource, demoParticipantsForIds } from "@/lib/participant-sources";
 import type { Locale } from "@/lib/locale";
 import { getAllEventParticipantRows, type EventParticipantRow } from "@/lib/event-participants-db";
@@ -115,7 +115,10 @@ export async function getParticipantsForEvent(slug: string, locale: Locale = "en
   if (source === "demo" && hardcoded) {
     return {
       status: "demo",
-      participants: hardcoded.filter((participant) => participant.isActive).map((p) => localize(p, locale)),
+      participants: sortParticipantsByCountry(
+        hardcoded.filter((participant) => participant.isActive).map((p) => localize(p, locale)),
+        locale,
+      ),
       sourceCheckedAt: null,
     };
   }
@@ -130,7 +133,10 @@ export async function getParticipantsForEvent(slug: string, locale: Locale = "en
 
   return {
     status: "verified",
-    participants: active.map((row) => localize(toParticipant(row), locale)),
+    participants: sortParticipantsByCountry(
+      active.map((row) => localize(toParticipant(row), locale)),
+      locale,
+    ),
     sourceCheckedAt,
   };
 }
