@@ -1,4 +1,4 @@
-﻿import type { Participant } from "@/types/participant";
+import type { Participant } from "@/types/participant";
 import { getPredictorCountryName } from "@/lib/countries";
 import { getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/locale";
@@ -42,9 +42,9 @@ function CountryBadge({ name, fontSize, maxWidth }: { name: string; fontSize: nu
         fontWeight: 700,
         color: TEXT_MUTED,
         maxWidth,
-        overflow: "hidden",
-        whiteSpace: "nowrap",
-        textOverflow: "ellipsis",
+        textAlign: "right",
+        lineHeight: 1.15,
+        whiteSpace: "normal",
       }}
     >
       {name}
@@ -170,7 +170,7 @@ export function PredictionCardMarkup({
             <div key={participant.id} style={{ display: "flex", alignItems: "center", fontSize: 27 * scale }}>
               <div style={{ display: "flex", width: 60, color: TEXT_MUTED }}>{index + 4}</div>
               <div style={{ display: "flex", flex: 1, color: TEXT_PRIMARY }}>{participant.displayName}</div>
-              <CountryBadge name={participant.countryName} fontSize={20} maxWidth={170} />
+              <CountryBadge name={participant.countryName} fontSize={20} maxWidth={300} />
             </div>
           ))}
         </div>
