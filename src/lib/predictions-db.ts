@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { generatePublicId } from "@/lib/public-id";
 import { getEventBySlug } from "@/lib/events";
@@ -412,6 +412,7 @@ export async function getPredictionByDeviceToken(
     .select("public_id")
     .eq("event_slug", eventSlug)
     .eq("device_token", deviceToken)
+    .neq("data_status", "demo")
     .maybeSingle();
 
   if (error || !prediction) return null;
@@ -437,6 +438,7 @@ export async function getPredictionByAuthUserId(
     .eq("event_slug", eventSlug)
     .eq("auth_user_id", authUserId)
     .eq("is_final", true)
+    .neq("data_status", "demo")
     .maybeSingle();
 
   if (error || !prediction) return null;
@@ -464,6 +466,7 @@ export async function getDeviceTokenIdentity(
     .eq("event_slug", eventSlug)
     .eq("device_token", deviceToken)
     .eq("is_final", true)
+    .neq("data_status", "demo")
     .maybeSingle();
 
   if (error || !data) return null;
